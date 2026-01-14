@@ -10,9 +10,24 @@ Eine Sammlung von Blueprints, Konfigurationen, Skripten und anderen Ressourcen a
 |------|--------------|
 | [Device Fault Notifications](blueprints/device_fault_notifications/) | Benachrichtigungen bei Geraetefehlern (basierend auf Binary Sensor Patterns) |
 
-### Weitere Ressourcen
+### Custom Templates
 
-*Weitere Inhalte folgen...*
+| Name | Beschreibung |
+|------|--------------|
+| [Security Entities](custom_templates/) | Zentrale Jinja2-Macros fuer Sicherheits-Entity-Pattern |
+
+### Templates
+
+| Name | Beschreibung |
+|------|--------------|
+| [Security Status](templates/security_status/) | Template-Sensor der alle Sicherheits-Entitaeten ueberwacht und einen Gesamtstatus liefert |
+
+### Dashboards
+
+| Name | Beschreibung |
+|------|--------------|
+| [Security Widget](dashboards/security_widget/) | Kompaktes Widget fuer das Uebersichts-Dashboard mit Sicherheitsstatus und Link zur Detail-Ansicht |
+| [Security View](dashboards/security_view/) | Vollstaendiges Sicherheits-Dashboard mit dynamischen Entity-Listen |
 
 ---
 

@@ -1,0 +1,91 @@
+{# ============================================================================
+   Security Entities - Zentrale Entity-Pattern fuer Sicherheitsgeraete
+
+   Diese Datei definiert alle Entity-Pattern fuer Sicherheitsgeraete.
+   Neue Geraete werden automatisch erkannt, wenn sie dem Pattern entsprechen.
+
+   Installation:
+   1. Datei nach /config/custom_templates/security_entities.jinja kopieren
+   2. In Templates/Automationen importieren mit:
+      {% from 'security_entities.jinja' import alarm_rauch_sensoren %}
+
+   ============================================================================ #}
+
+
+{# --------------------------------------------------------------------------
+   ALARM-SENSOREN (Rauch, CO, etc.)
+   -------------------------------------------------------------------------- #}
+
+{# Alarm-Rauch-Sensoren - Binary Sensors die Rauch erkennen #}
+{% macro alarm_rauch_sensoren() %}
+{{ states.binary_sensor
+   | selectattr('entity_id', 'search', '(co_alarm_.*_rauch|feueralarm_.*_(smoke|rauch))')
+   | map(attribute='entity_id')
+   | list
+   | to_json }}
+{% endmacro %}
+
+
+{# Alarm-CO-Sensoren - Kohlenmonoxid-Messwerte #}
+{% macro alarm_co_sensoren() %}
+{{ states.sensor
+   | selectattr('entity_id', 'search', 'co_alarm_.*_kohlenmonoxid')
+   | map(attribute='entity_id')
+   | list
+   | to_json }}
+{% endmacro %}
+
+
+{# --------------------------------------------------------------------------
+   ALARM-BATTERIE-SENSOREN
+   -------------------------------------------------------------------------- #}
+
+{# Alarm-Batterie-Sensoren - Batteriestand der Sicherheitsgeraete #}
+{% macro alarm_batterie_sensoren() %}
+{{ states.sensor
+   | selectattr('entity_id', 'search', '(co_alarm_.*_batterie|feueralarm_.*_batter)')
+   | map(attribute='entity_id')
+   | list
+   | to_json }}
+{% endmacro %}
+
+
+{# --------------------------------------------------------------------------
+   ALARM-FEHLER-SENSOREN
+   -------------------------------------------------------------------------- #}
+
+{# Alarm-Fehler-Sensoren - Geraetedefekte und Lebensdauer-Ende #}
+{% macro alarm_fehler_sensoren() %}
+{{ states.binary_sensor
+   | selectattr('entity_id', 'search', '(co_alarm_.*_is_life_end|feueralarm_.*_fault)')
+   | map(attribute='entity_id')
+   | list
+   | to_json }}
+{% endmacro %}
+
+
+{# --------------------------------------------------------------------------
+   ALARM-PANELS
+   -------------------------------------------------------------------------- #}
+
+{# Alarm-Panels - Die Alarm-Zentralen #}
+{% macro alarm_panels() %}
+{{ [
+  'alarm_control_panel.alarm_zentrale',
+  'alarm_control_panel.feuer_co_alarm',
+  'alarm_control_panel.leckage_alarm'
+] | to_json }}
+{% endmacro %}
+
+
+{# --------------------------------------------------------------------------
+   KOMBINIERTE ABFRAGEN
+   -------------------------------------------------------------------------- #}
+
+{# Alle Alarm-Sensoren (fuer Gesamtstatus) #}
+{% macro alarm_alle_sensoren() %}
+{{ ((alarm_rauch_sensoren() | from_json) +
+    (alarm_co_sensoren() | from_json) +
+    (alarm_batterie_sensoren() | from_json) +
+    (alarm_fehler_sensoren() | from_json)) | to_json }}
+{% endmacro %}

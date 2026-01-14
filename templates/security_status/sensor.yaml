@@ -1,0 +1,217 @@
+# Template-Sensor fuer Sicherheitsstatus-Uebersicht
+# Dieser Sensor fasst alle sicherheitsrelevanten Entitaeten zusammen
+# und gibt einen Gesamtstatus zurueck.
+#
+# Voraussetzung:
+#   custom_templates/security_entities.jinja muss installiert sein
+#
+# Einbindung in configuration.yaml:
+#   template: !include templates/security_status/sensor.yaml
+
+- sensor:
+    - name: "Sicherheitsstatus"
+      unique_id: security_status_overview
+      icon: >
+        {% set status = this.state %}
+        {% if status == 'Alarm' %}
+          mdi:shield-alert
+        {% elif status == 'Warnung' %}
+          mdi:shield-half-full
+        {% else %}
+          mdi:shield-check
+        {% endif %}
+      state: >
+        {% from 'security_entities.jinja' import alarm_rauch_sensoren, alarm_co_sensoren, alarm_batterie_sensoren, alarm_fehler_sensoren, alarm_panels %}
+        {% set ns = namespace(alarm=false, warning=false) %}
+
+        {# Alarm-Panels pruefen #}
+        {% for panel in alarm_panels() | from_json %}
+          {% if states(panel) in ['triggered', 'pending'] %}
+            {% set ns.alarm = true %}
+          {% endif %}
+        {% endfor %}
+
+        {# Alarm-Rauch-Sensoren pruefen #}
+        {% for entity_id in alarm_rauch_sensoren() | from_json %}
+          {% if states(entity_id) == 'on' %}
+            {% set ns.alarm = true %}
+          {% endif %}
+        {% endfor %}
+
+        {# Alarm-CO-Sensoren pruefen (> 100 ppm = Alarm, > 30 ppm = Warnung) #}
+        {% for entity_id in alarm_co_sensoren() | from_json %}
+          {% set co_value = states(entity_id) | float(0) %}
+          {% if co_value >= 100 %}
+            {% set ns.alarm = true %}
+          {% elif co_value >= 30 %}
+            {% set ns.warning = true %}
+          {% endif %}
+        {% endfor %}
+
+        {# Alarm-Fehler-Sensoren pruefen #}
+        {% for entity_id in alarm_fehler_sensoren() | from_json %}
+          {% if states(entity_id) == 'on' %}
+            {% set ns.alarm = true %}
+          {% endif %}
+        {% endfor %}
+
+        {# Alarm-Batterie-Sensoren pruefen (< 25% = Warnung, < 10% = Alarm) #}
+        {% for entity_id in alarm_batterie_sensoren() | from_json %}
+          {% set battery = states(entity_id) | float(100) %}
+          {% if battery < 10 %}
+            {% set ns.alarm = true %}
+          {% elif battery < 25 %}
+            {% set ns.warning = true %}
+          {% endif %}
+        {% endfor %}
+
+        {% if ns.alarm %}
+          Alarm
+        {% elif ns.warning %}
+          Warnung
+        {% else %}
+          Sicher
+        {% endif %}
+
+      attributes:
+        # Anzahl kritischer Probleme (Alarme)
+        alarm_count: >
+          {% from 'security_entities.jinja' import alarm_rauch_sensoren, alarm_co_sensoren, alarm_batterie_sensoren, alarm_fehler_sensoren, alarm_panels %}
+          {% set ns = namespace(count=0) %}
+
+          {# Alarm-Panels #}
+          {% for panel in alarm_panels() | from_json %}
+            {% if states(panel) in ['triggered', 'pending'] %}
+              {% set ns.count = ns.count + 1 %}
+            {% endif %}
+          {% endfor %}
+
+          {# Alarm-Rauch-Sensoren #}
+          {% for entity_id in alarm_rauch_sensoren() | from_json %}
+            {% if states(entity_id) == 'on' %}
+              {% set ns.count = ns.count + 1 %}
+            {% endif %}
+          {% endfor %}
+
+          {# Alarm-CO >= 100 ppm #}
+          {% for entity_id in alarm_co_sensoren() | from_json %}
+            {% if states(entity_id) | float(0) >= 100 %}
+              {% set ns.count = ns.count + 1 %}
+            {% endif %}
+          {% endfor %}
+
+          {# Alarm-Fehler-Sensoren #}
+          {% for entity_id in alarm_fehler_sensoren() | from_json %}
+            {% if states(entity_id) == 'on' %}
+              {% set ns.count = ns.count + 1 %}
+            {% endif %}
+          {% endfor %}
+
+          {# Alarm-Batterie < 10% #}
+          {% for entity_id in alarm_batterie_sensoren() | from_json %}
+            {% if states(entity_id) | float(100) < 10 %}
+              {% set ns.count = ns.count + 1 %}
+            {% endif %}
+          {% endfor %}
+
+          {{ ns.count }}
+
+        # Anzahl Warnungen
+        warning_count: >
+          {% from 'security_entities.jinja' import alarm_co_sensoren, alarm_batterie_sensoren %}
+          {% set ns = namespace(count=0) %}
+
+          {# Alarm-CO zwischen 30-100 ppm #}
+          {% for entity_id in alarm_co_sensoren() | from_json %}
+            {% set co_value = states(entity_id) | float(0) %}
+            {% if co_value >= 30 and co_value < 100 %}
+              {% set ns.count = ns.count + 1 %}
+            {% endif %}
+          {% endfor %}
+
+          {# Alarm-Batterie zwischen 10-25% #}
+          {% for entity_id in alarm_batterie_sensoren() | from_json %}
+            {% set battery = states(entity_id) | float(100) %}
+            {% if battery >= 10 and battery < 25 %}
+              {% set ns.count = ns.count + 1 %}
+            {% endif %}
+          {% endfor %}
+
+          {{ ns.count }}
+
+        # Detaillierte Liste aller Probleme
+        details: >
+          {% from 'security_entities.jinja' import alarm_rauch_sensoren, alarm_co_sensoren, alarm_batterie_sensoren, alarm_fehler_sensoren, alarm_panels %}
+          {% set ns = namespace(issues=[]) %}
+
+          {# Alarm-Panels #}
+          {% set panel_names = {
+            'alarm_control_panel.alarm_zentrale': 'Alarm-Zentrale',
+            'alarm_control_panel.feuer_co_alarm': 'Feuer/CO-Alarm',
+            'alarm_control_panel.leckage_alarm': 'Leckage-Alarm'
+          } %}
+          {% for panel in alarm_panels() | from_json %}
+            {% if states(panel) == 'triggered' %}
+              {% set ns.issues = ns.issues + [panel_names.get(panel, panel) ~ ' ausgeloest!'] %}
+            {% elif states(panel) == 'pending' %}
+              {% set ns.issues = ns.issues + [panel_names.get(panel, panel) ~ ' wird ausgeloest...'] %}
+            {% endif %}
+          {% endfor %}
+
+          {# Alarm-Rauch-Sensoren #}
+          {% for entity_id in alarm_rauch_sensoren() | from_json %}
+            {% if states(entity_id) == 'on' %}
+              {% set ns.issues = ns.issues + ['Alarm-Rauch: ' ~ state_attr(entity_id, 'friendly_name') | default(entity_id)] %}
+            {% endif %}
+          {% endfor %}
+
+          {# Alarm-CO-Sensoren #}
+          {% for entity_id in alarm_co_sensoren() | from_json %}
+            {% set co_value = states(entity_id) | float(0) %}
+            {% if co_value >= 100 %}
+              {% set ns.issues = ns.issues + ['Alarm-CO: ' ~ state_attr(entity_id, 'friendly_name') | default(entity_id) ~ ' (' ~ co_value | int ~ ' ppm)'] %}
+            {% elif co_value >= 30 %}
+              {% set ns.issues = ns.issues + ['Warnung-CO: ' ~ state_attr(entity_id, 'friendly_name') | default(entity_id) ~ ' (' ~ co_value | int ~ ' ppm)'] %}
+            {% endif %}
+          {% endfor %}
+
+          {# Alarm-Fehler-Sensoren #}
+          {% for entity_id in alarm_fehler_sensoren() | from_json %}
+            {% if states(entity_id) == 'on' %}
+              {% set ns.issues = ns.issues + ['Alarm-Fehler: ' ~ state_attr(entity_id, 'friendly_name') | default(entity_id)] %}
+            {% endif %}
+          {% endfor %}
+
+          {# Alarm-Batterie-Warnungen #}
+          {% for entity_id in alarm_batterie_sensoren() | from_json %}
+            {% set battery = states(entity_id) | float(100) %}
+            {% if battery < 10 %}
+              {% set ns.issues = ns.issues + ['Alarm-Batterie: ' ~ state_attr(entity_id, 'friendly_name') | default(entity_id) ~ ' (' ~ battery | int ~ '%)'] %}
+            {% elif battery < 25 %}
+              {% set ns.issues = ns.issues + ['Warnung-Batterie: ' ~ state_attr(entity_id, 'friendly_name') | default(entity_id) ~ ' (' ~ battery | int ~ '%)'] %}
+            {% endif %}
+          {% endfor %}
+
+          {{ ns.issues }}
+
+        # Status der einzelnen Alarm-Panels
+        alarm_zentrale: "{{ states('alarm_control_panel.alarm_zentrale') }}"
+        feuer_co_alarm: "{{ states('alarm_control_panel.feuer_co_alarm') }}"
+        leckage_alarm: "{{ states('alarm_control_panel.leckage_alarm') }}"
+
+        # Alarm-Entity-Listen fuer Dashboard (auto-entities)
+        alarm_entities_rauch: >
+          {% from 'security_entities.jinja' import alarm_rauch_sensoren %}
+          {{ alarm_rauch_sensoren() | from_json }}
+        alarm_entities_co: >
+          {% from 'security_entities.jinja' import alarm_co_sensoren %}
+          {{ alarm_co_sensoren() | from_json }}
+        alarm_entities_batterie: >
+          {% from 'security_entities.jinja' import alarm_batterie_sensoren %}
+          {{ alarm_batterie_sensoren() | from_json }}
+        alarm_entities_fehler: >
+          {% from 'security_entities.jinja' import alarm_fehler_sensoren %}
+          {{ alarm_fehler_sensoren() | from_json }}
+        alarm_entities_panels: >
+          {% from 'security_entities.jinja' import alarm_panels %}
+          {{ alarm_panels() | from_json }}

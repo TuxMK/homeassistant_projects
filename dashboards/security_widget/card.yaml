@@ -1,0 +1,56 @@
+# Sicherheits-Widget fuer Uebersichts-Dashboard
+# Zeigt den Gesamtstatus aller Sicherheitssensoren an
+# und verlinkt auf die Sicherheits-Ansicht.
+#
+# Voraussetzungen:
+# - Template-Sensor "sensor.sicherheitsstatus" (siehe templates/security_status/sensor.yaml)
+# - Mushroom Cards (via HACS installieren)
+#
+# Einfach den Code unten kopieren und als neue Karte im Dashboard hinzufuegen.
+
+type: custom:mushroom-template-card
+primary: >
+  {% set status = states('sensor.sicherheitsstatus') %} {% if status == 'Alarm'
+  %}
+    Sicherheitsalarm
+  {% elif status == 'Warnung' %}
+    Sicherheitswarnung
+  {% else %}
+    Alles sicher
+  {% endif %}
+secondary: >
+  {% set details = state_attr('sensor.sicherheitsstatus', 'details') |
+  default([]) %} {% if details | length > 0 %} {% for issue in details %} • {{
+  issue }} {% endfor %} {% else %} Alle Sensoren und Alarme OK {% endif %}
+icon: |
+  {% if is_state('sensor.sicherheitsstatus', 'Alarm') %}
+    mdi:shield-alert
+  {% elif is_state('sensor.sicherheitsstatus', 'Warnung') %}
+    mdi:shield-half-full
+  {% else %}
+    mdi:shield-check
+  {% endif %}
+badge_icon: >
+  {% set count = state_attr('sensor.sicherheitsstatus', 'alarm_count') | int(0)
+  + state_attr('sensor.sicherheitsstatus', 'warning_count') | int(0) %} {% if
+  count > 0 %}mdi:alert-circle{% endif %}
+badge_color: |
+  {% if state_attr('sensor.sicherheitsstatus', 'alarm_count') | int(0) > 0 %}
+    red
+  {% else %}
+    orange
+  {% endif %}
+multiline_secondary: true
+tap_action:
+  action: navigate
+  navigation_path: /lovelace/security
+color: |
+  {% if is_state('sensor.sicherheitsstatus', 'Alarm') %}
+    red
+  {% elif is_state('sensor.sicherheitsstatus', 'Warnung') %}
+    orange
+  {% else %}
+    green
+  {% endif %}
+vertical: true
+features_position: bottom

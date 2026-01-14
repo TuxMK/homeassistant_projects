@@ -1,0 +1,117 @@
+# Sicherheits-Dashboard mit zentralen Entity-Listen
+#
+# Nutzt die Attribute von sensor.sicherheitsstatus fuer dynamische Entity-Listen.
+# Die Pattern sind zentral in custom_templates/security_entities.jinja definiert.
+#
+# Voraussetzungen:
+# - Template-Sensor "sensor.sicherheitsstatus"
+# - custom:auto-entities (via HACS)
+# - card-mod (via HACS, optional fuer Farben)
+
+type: sections
+max_columns: 4
+icon: mdi:shield-home
+path: security
+title: Sicherheit
+sections:
+  # ===========================================================================
+  # ALARM-MODUS
+  # ===========================================================================
+  - type: grid
+    cards:
+      - type: heading
+        heading_style: title
+        heading: Alarm-Modus 🚨
+      - states:
+          - arm_home
+        type: alarm-panel
+        grid_options:
+          rows: 3
+          columns: 12
+        entity: alarm_control_panel.alarm_zentrale
+      - states:
+          - arm_custom_bypass
+        type: alarm-panel
+        entity: alarm_control_panel.feuer_co_alarm
+      - states:
+          - arm_home
+        type: alarm-panel
+        entity: alarm_control_panel.leckage_alarm
+    column_span: 1
+
+  # ===========================================================================
+  # ALARM-STATUS (Rauch + CO)
+  # ===========================================================================
+  - type: grid
+    cards:
+      - type: heading
+        heading: Alarm-Status 🚨
+        heading_style: title
+      - type: custom:auto-entities
+        card:
+          type: entities
+        filter:
+          template: |
+            [
+            {% for e in state_attr('sensor.sicherheitsstatus', 'alarm_entities_co') | default([]) %}
+              {% set color = 'green' if states(e)|float(0) < 30 else 'yellow' if states(e)|float(0) < 50 else 'orange' if states(e)|float(0) < 100 else 'red' %}
+              {"entity": "{{ e }}", "card_mod": {"style": ":host { --state-icon-color: {{ color }}; }"}}{{ "," if not loop.last else "" }}
+            {% endfor %}
+            {% if state_attr('sensor.sicherheitsstatus', 'alarm_entities_co') | default([]) | length > 0 and state_attr('sensor.sicherheitsstatus', 'alarm_entities_rauch') | default([]) | length > 0 %}
+              ,{"type": "divider"},
+            {% endif %}
+            {% for e in state_attr('sensor.sicherheitsstatus', 'alarm_entities_rauch') | default([]) %}
+              {% set color = 'green' if is_state(e, 'off') else 'red' %}
+              {"entity": "{{ e }}", "card_mod": {"style": ":host { --state-icon-color: {{ color }}; }"}}{{ "," if not loop.last else "" }}
+            {% endfor %}
+            ]
+
+  # ===========================================================================
+  # ALARM-BATTERIE
+  # ===========================================================================
+  - type: grid
+    cards:
+      - type: heading
+        heading_style: title
+        heading: Batterie der Sensoren 🔋
+      - type: custom:auto-entities
+        card:
+          type: entities
+        filter:
+          template: |
+            [
+            {% for e in state_attr('sensor.sicherheitsstatus', 'alarm_entities_batterie') | default([]) %}
+              {% set color = 'green' if states(e)|float(0) > 50 else 'orange' if states(e)|float(0) > 25 else 'red' %}
+              {"entity": "{{ e }}", "card_mod": {"style": ":host { --state-icon-color: {{ color }}; }"}}{{ "," if not loop.last else "" }}
+            {% endfor %}
+            ]
+
+  # ===========================================================================
+  # ALARM-FEHLER
+  # ===========================================================================
+  - type: grid
+    cards:
+      - type: heading
+        heading: Fehler-Zustaende der Sensoren 🔴
+        heading_style: title
+      - type: custom:auto-entities
+        card:
+          type: entities
+        filter:
+          template: |
+            [
+            {% for e in state_attr('sensor.sicherheitsstatus', 'alarm_entities_fehler') | default([]) %}
+              {% set color = 'green' if is_state(e, 'off') else 'red' %}
+              {"entity": "{{ e }}", "card_mod": {"style": ":host { --state-icon-color: {{ color }}; }"}}{{ "," if not loop.last else "" }}
+            {% endfor %}
+            ]
+
+  - type: grid
+    cards: []
+
+cards: []
+header:
+  card:
+    type: markdown
+    text_only: true
+    content: <h1>🛡️ Hausueberwachung</h1>
