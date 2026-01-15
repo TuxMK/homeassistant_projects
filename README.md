@@ -29,6 +29,12 @@ Eine Sammlung von Blueprints, Konfigurationen, Skripten und anderen Ressourcen a
 | [Security Widget](dashboards/security_widget/) | Kompaktes Widget fuer das Uebersichts-Dashboard mit Sicherheitsstatus und Link zur Detail-Ansicht |
 | [Security View](dashboards/security_view/) | Vollstaendiges Sicherheits-Dashboard mit dynamischen Entity-Listen |
 
+### Zigbee2MQTT
+
+| Name | Beschreibung |
+|------|--------------|
+| [External Converters](zigbee2mqtt/) | Angepasste Geraete-Definitionen zur Vermeidung von Binding Table Overflow bei EFR32MG21-basierten Coordinatoren |
+
 ---
 
 ## Installation

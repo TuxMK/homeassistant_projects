@@ -26,13 +26,17 @@
 {% endmacro %}
 
 
-{# Alarm-CO-Sensoren - Kohlenmonoxid-Messwerte #}
+{# Alarm-CO-Sensoren - Kohlenmonoxid-Messwerte und Carbon Monoxide Binary Sensors #}
 {% macro alarm_co_sensoren() %}
-{{ states.sensor
+{% set sensoren_kohlenmonoxid = states.sensor
    | selectattr('entity_id', 'search', 'co_alarm_.*_kohlenmonoxid')
    | map(attribute='entity_id')
-   | list
-   | to_json }}
+   | list %}
+{% set sensoren_carbon_monoxide = states.binary_sensor
+   | selectattr('entity_id', 'search', 'co_alarm_.*_carbon_monoxide')
+   | map(attribute='entity_id')
+   | list %}
+{{ (sensoren_kohlenmonoxid + sensoren_carbon_monoxide) | to_json }}
 {% endmacro %}
 
 
@@ -43,7 +47,7 @@
 {# Alarm-Batterie-Sensoren - Batteriestand der Sicherheitsgeraete #}
 {% macro alarm_batterie_sensoren() %}
 {{ states.sensor
-   | selectattr('entity_id', 'search', '(co_alarm_.*_batterie|feueralarm_.*_batter)')
+   | selectattr('entity_id', 'search', '(co_alarm_.*_(batterie|battery)|feueralarm_.*_batter)')
    | map(attribute='entity_id')
    | list
    | to_json }}

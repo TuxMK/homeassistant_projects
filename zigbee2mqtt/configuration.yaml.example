@@ -1,0 +1,45 @@
+# Zigbee2MQTT Konfiguration - Relevante Aenderungen
+#
+# Diese Datei zeigt NUR die Aenderungen zur Vermeidung von
+# Binding Table Overflow bei EFR32MG21-basierten Coordinatoren.
+#
+# Fuege diese Abschnitte in deine bestehende configuration.yaml ein.
+
+# ============================================================
+# 1. Unter 'advanced:' hinzufuegen:
+# ============================================================
+advanced:
+  # Deaktiviert automatisches Reporting-Setup
+  # Verhindert einige (aber nicht alle) Configure-Versuche
+  report: false
+
+# ============================================================
+# 2. Neuen Abschnitt hinzufuegen (falls nicht vorhanden):
+# ============================================================
+# Verhindert Configure beim Geraete-Beitritt
+# Funktioniert nicht bei allen Geraeten zuverlaessig
+device_options:
+  configure_on_join: false
+
+# ============================================================
+# 3. External Converter laden - MUSS vor 'devices:' stehen!
+# ============================================================
+# Der Converter ueberschreibt die Geraete-Definition und
+# entfernt die configure-Funktion komplett
+external_converters:
+  - develco_override.js
+
+# ============================================================
+# Reihenfolge in der configuration.yaml:
+# ============================================================
+# mqtt:
+# serial:
+# advanced:
+#   report: false        <-- NEU
+# device_options:        <-- NEU
+#   configure_on_join: false
+# frontend:
+# homeassistant:
+# external_converters:   <-- NEU
+#   - develco_override.js
+# devices:
