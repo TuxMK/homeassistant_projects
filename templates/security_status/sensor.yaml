@@ -21,7 +21,7 @@
           mdi:shield-check
         {% endif %}
       state: >
-        {% from 'security_entities.jinja' import alarm_rauch_sensoren, alarm_co_sensoren, alarm_batterie_sensoren, alarm_fehler_sensoren, alarm_panels %}
+        {% from 'security_entities.jinja' import alarm_rauch_sensoren, alarm_co_sensoren, alarm_leckage_sensoren, alarm_batterie_sensoren, alarm_fehler_sensoren, alarm_panels %}
         {% set ns = namespace(alarm=false, warning=false) %}
 
         {# Alarm-Panels pruefen #}
@@ -45,6 +45,13 @@
             {% set ns.alarm = true %}
           {% elif co_value >= 30 %}
             {% set ns.warning = true %}
+          {% endif %}
+        {% endfor %}
+
+        {# Alarm-Leckage-Sensoren pruefen #}
+        {% for entity_id in alarm_leckage_sensoren() | from_json %}
+          {% if states(entity_id) == 'on' %}
+            {% set ns.alarm = true %}
           {% endif %}
         {% endfor %}
 
@@ -76,7 +83,7 @@
       attributes:
         # Anzahl kritischer Probleme (Alarme)
         alarm_count: >
-          {% from 'security_entities.jinja' import alarm_rauch_sensoren, alarm_co_sensoren, alarm_batterie_sensoren, alarm_fehler_sensoren, alarm_panels %}
+          {% from 'security_entities.jinja' import alarm_rauch_sensoren, alarm_co_sensoren, alarm_leckage_sensoren, alarm_batterie_sensoren, alarm_fehler_sensoren, alarm_panels %}
           {% set ns = namespace(count=0) %}
 
           {# Alarm-Panels #}
@@ -96,6 +103,13 @@
           {# Alarm-CO >= 100 ppm #}
           {% for entity_id in alarm_co_sensoren() | from_json %}
             {% if states(entity_id) | float(0) >= 100 %}
+              {% set ns.count = ns.count + 1 %}
+            {% endif %}
+          {% endfor %}
+
+          {# Alarm-Leckage-Sensoren #}
+          {% for entity_id in alarm_leckage_sensoren() | from_json %}
+            {% if states(entity_id) == 'on' %}
               {% set ns.count = ns.count + 1 %}
             {% endif %}
           {% endfor %}
@@ -141,7 +155,7 @@
 
         # Detaillierte Liste aller Probleme
         details: >
-          {% from 'security_entities.jinja' import alarm_rauch_sensoren, alarm_co_sensoren, alarm_batterie_sensoren, alarm_fehler_sensoren, alarm_panels %}
+          {% from 'security_entities.jinja' import alarm_rauch_sensoren, alarm_co_sensoren, alarm_leckage_sensoren, alarm_batterie_sensoren, alarm_fehler_sensoren, alarm_panels %}
           {% set ns = namespace(issues=[]) %}
 
           {# Alarm-Panels #}
@@ -172,6 +186,13 @@
               {% set ns.issues = ns.issues + ['Alarm-CO: ' ~ state_attr(entity_id, 'friendly_name') | default(entity_id) ~ ' (' ~ co_value | int ~ ' ppm)'] %}
             {% elif co_value >= 30 %}
               {% set ns.issues = ns.issues + ['Warnung-CO: ' ~ state_attr(entity_id, 'friendly_name') | default(entity_id) ~ ' (' ~ co_value | int ~ ' ppm)'] %}
+            {% endif %}
+          {% endfor %}
+
+          {# Alarm-Leckage-Sensoren #}
+          {% for entity_id in alarm_leckage_sensoren() | from_json %}
+            {% if states(entity_id) == 'on' %}
+              {% set ns.issues = ns.issues + ['Leckage: ' ~ state_attr(entity_id, 'friendly_name') | default(entity_id)] %}
             {% endif %}
           {% endfor %}
 
@@ -209,6 +230,9 @@
         alarm_entities_batterie: >
           {% from 'security_entities.jinja' import alarm_batterie_sensoren %}
           {{ alarm_batterie_sensoren() | from_json }}
+        alarm_entities_leckage: >
+          {% from 'security_entities.jinja' import alarm_leckage_sensoren %}
+          {{ alarm_leckage_sensoren() | from_json }}
         alarm_entities_fehler: >
           {% from 'security_entities.jinja' import alarm_fehler_sensoren %}
           {{ alarm_fehler_sensoren() | from_json }}

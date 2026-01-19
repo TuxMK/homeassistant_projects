@@ -41,13 +41,27 @@
 
 
 {# --------------------------------------------------------------------------
+   LECKAGE-SENSOREN (Wasserleck)
+   -------------------------------------------------------------------------- #}
+
+{# Leckage-Sensoren - Binary Sensors die Wasserlecks erkennen #}
+{% macro alarm_leckage_sensoren() %}
+{{ states.binary_sensor
+   | selectattr('entity_id', 'search', 'leckagealarm_.*_water_leak')
+   | map(attribute='entity_id')
+   | list
+   | to_json }}
+{% endmacro %}
+
+
+{# --------------------------------------------------------------------------
    ALARM-BATTERIE-SENSOREN
    -------------------------------------------------------------------------- #}
 
 {# Alarm-Batterie-Sensoren - Batteriestand der Sicherheitsgeraete #}
 {% macro alarm_batterie_sensoren() %}
 {{ states.sensor
-   | selectattr('entity_id', 'search', '(co_alarm_.*_(batterie|battery)|feueralarm_.*_batter)')
+   | selectattr('entity_id', 'search', '(co_alarm_.*_(batterie|battery)|feueralarm_.*_batter|leckagealarm_.*_battery)')
    | map(attribute='entity_id')
    | list
    | to_json }}
@@ -90,6 +104,7 @@
 {% macro alarm_alle_sensoren() %}
 {{ ((alarm_rauch_sensoren() | from_json) +
     (alarm_co_sensoren() | from_json) +
+    (alarm_leckage_sensoren() | from_json) +
     (alarm_batterie_sensoren() | from_json) +
     (alarm_fehler_sensoren() | from_json)) | to_json }}
 {% endmacro %}

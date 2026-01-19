@@ -70,6 +70,7 @@ Siehe [dashboards/security_view/](../dashboards/security_view/) fuer vollstaendi
 |-------|--------------|--------------|
 | `alarm_rauch_sensoren()` | Alarm-Rauch-Sensoren (CO-Alarm, Feueralarm) | Liste von entity_ids |
 | `alarm_co_sensoren()` | Alarm-CO-Messwert-Sensoren | Liste von entity_ids |
+| `alarm_leckage_sensoren()` | Leckage-Sensoren (Wasserleck) | Liste von entity_ids |
 | `alarm_batterie_sensoren()` | Alarm-Batterie-Sensoren der Sicherheitsgeraete | Liste von entity_ids |
 | `alarm_fehler_sensoren()` | Alarm-Fehler-Sensoren (life_end, fault) | Liste von entity_ids |
 | `alarm_panels()` | Alarm-Panels (die Alarm-Zentralen) | Liste von entity_ids |

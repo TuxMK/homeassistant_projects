@@ -64,6 +64,13 @@ sections:
               {% set color = 'green' if is_state(e, 'off') else 'red' %}
               {"entity": "{{ e }}", "card_mod": {"style": ":host { --state-icon-color: {{ color }}; }"}}{{ "," if not loop.last else "" }}
             {% endfor %}
+            {% if state_attr('sensor.sicherheitsstatus', 'alarm_entities_leckage') | default([]) | length > 0 and (state_attr('sensor.sicherheitsstatus', 'alarm_entities_rauch') | default([]) | length > 0 or state_attr('sensor.sicherheitsstatus', 'alarm_entities_co') | default([]) | length > 0) %}
+              ,{"type": "divider"},
+            {% endif %}
+            {% for e in state_attr('sensor.sicherheitsstatus', 'alarm_entities_leckage') | default([]) %}
+              {% set color = 'green' if is_state(e, 'off') else 'red' %}
+              {"entity": "{{ e }}", "card_mod": {"style": ":host { --state-icon-color: {{ color }}; }"}}{{ "," if not loop.last else "" }}
+            {% endfor %}
             ]
 
   # ===========================================================================
