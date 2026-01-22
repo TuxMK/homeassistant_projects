@@ -1,0 +1,99 @@
+alias: MQTT-Impuls-Zählerstand bereinigen (Delta)
+triggers:
+  - topic: meters/+/state
+    trigger: mqtt
+actions:
+  - variables:
+      device_id: "{{ trigger.topic.split('/')[1] | default('UNKNOWN') }}"
+      unique_id_cleaned: "{{ device_id }}_total_cleaned"
+      clean_topic: meters/{{ device_id }}/state_cleaned
+      device_id_upper: "{{ device_id | upper }}"
+      meter_config: >
+        {% if 'GAS' in device_id_upper %}
+          {{ {'type': 'gas', 'unit': 'm³', 'device_class': 'gas', 'icon': 'mdi:meter-gas', 'name': 'Total Gas Consumption Cleaned'} }}
+        {% elif 'STROM' in device_id_upper or 'ELEC' in device_id_upper or
+        'POWER' in device_id_upper %}
+          {{ {'type': 'electric', 'unit': 'kWh', 'device_class': 'energy', 'icon': 'mdi:flash', 'name': 'Total Electric Consumption Cleaned'} }}
+        {% elif 'WATER' in device_id_upper or 'WASSER' in device_id_upper %}
+          {{ {'type': 'water', 'unit': 'm³', 'device_class': 'water', 'icon': 'mdi:water', 'name': 'Total Water Consumption Cleaned'} }}
+        {% else %}
+          {{ {'type': 'generic', 'unit': '', 'device_class': '', 'icon': 'mdi:counter', 'name': 'Total Consumption Cleaned'} }}
+        {% endif %}
+      clean_entity_id: |
+        {% set found = states.sensor
+           | selectattr('attributes.device_id', 'defined')
+           | selectattr('attributes.device_id', 'eq', device_id)
+           | selectattr('attributes.status', 'defined')
+           | selectattr('attributes.status', 'eq', 'cleaned')
+           | map(attribute='entity_id')
+           | first
+           | default('') %}
+        {{ found }}
+      new_raw: "{{ trigger.payload_json.total_consumption | float(0) }}"
+      last_raw_state: >-
+        {{ state_attr(clean_entity_id, 'last_raw') if clean_entity_id else none
+        }}
+      clean_state: "{{ states(clean_entity_id) if clean_entity_id else 'unknown' }}"
+      is_new_sensor: >-
+        {{ clean_entity_id == '' or clean_state in ['unknown', 'unavailable',
+        'none'] }}
+      calculated_value: |
+        {% if is_new_sensor %}
+          {{ new_raw }}
+        {% else %}
+          {% set last_raw = last_raw_state | float(0) %}
+          {% set current_clean = clean_state | float(0) %}
+          {% set delta = new_raw - last_raw %}
+          {% if delta > 0 %}
+            {{ current_clean + delta }}
+          {% else %}
+            {{ current_clean }}
+          {% endif %}
+        {% endif %}
+      delta_value: "{{ (new_raw - (last_raw_state | float(0))) | round(3) }}"
+  - condition: template
+    value_template: "{{ device_id != 'UNKNOWN' }}"
+  - if:
+      - condition: template
+        value_template: "{{ is_new_sensor }}"
+    then:
+      - action: mqtt.publish
+        data:
+          topic: homeassistant/sensor/{{ device_id }}/total_cleaned/config
+          retain: true
+          qos: 0
+          payload: |
+            {
+              "state_topic": "{{ clean_topic }}",
+              "value_template": "{{ '{{' }} value_json.total_consumption | float(0) {{ '}}' }}",
+              "json_attributes_topic": "{{ clean_topic }}",
+              "unit_of_measurement": "{{ meter_config.unit }}",
+              "device_class": "{{ meter_config.device_class }}",
+              "state_class": "total_increasing",
+              "unique_id": "{{ unique_id_cleaned }}",
+              "name": "{{ meter_config.name }}",
+              "icon": "{{ meter_config.icon }}",
+              "device": {
+                "identifiers": ["{{ device_id }}"],
+                "manufacturer": "nineti GmbH",
+                "model": "Smart Reader",
+                "name": "Reader {{ device_id }}"
+              }
+            }
+  - action: mqtt.publish
+    data:
+      topic: "{{ clean_topic }}"
+      retain: true
+      qos: 0
+      payload: |
+        {
+          "device_id": "{{ device_id }}",
+          "total_consumption": {{ calculated_value | float }},
+          "last_raw": {{ new_raw }},
+          "delta": {{ delta_value }},
+          "meter_type": "{{ meter_config.type }}",
+          "status": "cleaned",
+          "timestamp": {{ as_timestamp(now()) | int }}
+        }
+max: 20
+mode: queued
