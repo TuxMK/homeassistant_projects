@@ -47,12 +47,12 @@ Dieser Blueprint ueberwacht Binary Sensoren, deren Entity-IDs bestimmten Regex-P
 2. **Blueprint importieren** klicken
 3. URL eingeben:
    ```
-   https://raw.githubusercontent.com/DEIN_USERNAME/homeassistant-collection/main/blueprints/device_fault_notifications/device_fault_notifications.yaml
+   https://raw.githubusercontent.com/DEIN_USERNAME/homeassistant-collection/main/blueprints/device_fault_notification/blueprint_device_fault_notification.yaml
    ```
 
 ### Manuell
 
-1. Datei `device_fault_notifications.yaml` herunterladen
+1. Datei `blueprint_device_fault_notification.yaml` herunterladen
 2. Nach `/config/blueprints/automation/custom/` kopieren (Ordner ggf. erstellen)
 3. Home Assistant neu starten oder Blueprints neu laden
 

@@ -8,7 +8,7 @@ Dieses Repository ist eine Sammlung von Blueprints, Konfigurationen, Skripten un
 /
 ├── blueprints/                    # Home Assistant Blueprints
 │   └── device_fault_notification/ # Geraetefehlererkennung
-│       ├── blueprint.yaml         # Blueprint-Definition
+│       ├── blueprint_*.yaml        # Blueprint-Definition
 │       └── README.md              # Dokumentation
 ├── LICENSE                        # MIT License
 └── README.md                      # Projekt-Uebersicht
@@ -24,7 +24,7 @@ Dieses Repository ist eine Sammlung von Blueprints, Konfigurationen, Skripten un
 ### Blueprints
 - Jeder Blueprint hat einen eigenen Ordner unter `/blueprints/`
 - Jeder Blueprint-Ordner enthaelt:
-  - `blueprint.yaml` - Die Blueprint-Definition
+  - `blueprint_<name>.yaml` - Die Blueprint-Definition
   - `README.md` - Dokumentation mit Features, Installation und Konfiguration
 - Blueprints folgen dem Home Assistant Blueprint-Format
 - Quellenangaben bei Community-basierten Blueprints erforderlich

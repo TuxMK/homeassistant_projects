@@ -69,12 +69,12 @@ Diese werden unter **Einstellungen > Geraete & Dienste > Helfer > Schalter** ers
 2. **Blueprint importieren** klicken
 3. URL eingeben:
    ```
-   https://raw.githubusercontent.com/DEIN_USERNAME/homeassistant-collection/main/blueprints/climate_alarm/blueprint.yaml
+   https://raw.githubusercontent.com/DEIN_USERNAME/homeassistant-collection/main/blueprints/climate_alarm/blueprint_climate_alarm.yaml
    ```
 
 ### Manuell
 
-1. Datei `blueprint.yaml` herunterladen
+1. Datei `blueprint_climate_alarm.yaml` herunterladen
 2. Nach `/config/blueprints/automation/custom/climate_alarm/` kopieren (Ordner ggf. erstellen)
 3. Home Assistant neu starten oder Blueprints neu laden
 
