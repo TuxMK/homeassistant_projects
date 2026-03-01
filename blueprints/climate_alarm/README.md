@@ -20,7 +20,8 @@ Dieser Blueprint ueberwacht ausgewaehlte Temperatur- und Feuchtigkeitssensoren i
   - Fuer unterschiedliche Bereiche separate Automationen erstellen
 
 - **Hysterese**
-  - Konfigurierbarer Wert zur Vermeidung von Alarm-Flackern
+  - Getrennte Hysterese-Werte fuer Temperatur und Feuchtigkeit
+  - Standard: 1 Grad C (Temperatur), 3 % (Feuchtigkeit)
   - Beispiel: Alarm bei >26 Grad C, Entwarnung erst bei <25 Grad C (1 Grad Hysterese)
 
 - **Prioritaetslogik**
@@ -86,7 +87,8 @@ Dieser Blueprint ueberwacht ausgewaehlte Temperatur- und Feuchtigkeitssensoren i
 | Temperatur Obergrenze | Maximale Temperatur in Grad C | 26 |
 | Feuchtigkeit Untergrenze | Minimale Feuchtigkeit in % | 30 |
 | Feuchtigkeit Obergrenze | Maximale Feuchtigkeit in % | 70 |
-| Hysterese | Abstand fuer Entwarnung | 1.0 |
+| Temperatur Hysterese | Abstand fuer Temperatur-Entwarnung | 1.0 |
+| Feuchtigkeits Hysterese | Abstand fuer Feuchtigkeits-Entwarnung | 3.0 |
 | Akustischer Alarm Helper | Optionaler Input Boolean Helper fuer akustische Alarmsteuerung | - |
 
 ### Hysterese erklaert
@@ -103,13 +105,13 @@ Zwischen 25°C und 26°C: Keine Zustandsaenderung (Totzone)
 
 ### Anwendungsbeispiele
 
-| Anwendung | Temp Min | Temp Max | Hum Min | Hum Max | Hysterese |
-|-----------|----------|----------|---------|---------|-----------|
-| Wohnraum | 18 | 26 | 30 | 70 | 1.0 |
-| Kuehlschrank | 2 | 8 | - | - | 0.5 |
-| Gefrierschrank | -22 | -16 | - | - | 1.0 |
-| Serverraum | 18 | 27 | 20 | 60 | 1.0 |
-| Weinkeller | 10 | 16 | 50 | 80 | 0.5 |
+| Anwendung | Temp Min | Temp Max | Hum Min | Hum Max | Temp Hyst. | Hum Hyst. |
+|-----------|----------|----------|---------|---------|------------|-----------|
+| Wohnraum | 18 | 26 | 30 | 70 | 1.0 | 3.0 |
+| Kuehlschrank | 2 | 8 | - | - | 0.5 | - |
+| Gefrierschrank | -22 | -16 | - | - | 1.0 | - |
+| Serverraum | 18 | 27 | 20 | 60 | 1.0 | 3.0 |
+| Weinkeller | 10 | 16 | 50 | 80 | 0.5 | 2.0 |
 
 ## Custom Actions
 
@@ -122,7 +124,8 @@ Verfuegbare Template-Variablen:
 | `{{trigger_entity}}` | Entity ID des ausloesenden Sensors |
 | `{{temp_min}}` / `{{temp_max}}` | Temperatur-Grenzwerte |
 | `{{hum_min}}` / `{{hum_max}}` | Feuchtigkeits-Grenzwerte |
-| `{{hysteresis}}` | Hysterese-Wert |
+| `{{temp_hysteresis}}` | Temperatur-Hysterese-Wert |
+| `{{hum_hysteresis}}` | Feuchtigkeits-Hysterese-Wert |
 | `{{all_temp_alarm_sensors}}` | Alle Temperatursensoren im Alarm |
 | `{{all_hum_alarm_sensors}}` | Alle Feuchtigkeitssensoren im Alarm |
 | `{{any_temp_in_alarm}}` | Temperatursensor aktuell im Alarmbereich (true/false) |

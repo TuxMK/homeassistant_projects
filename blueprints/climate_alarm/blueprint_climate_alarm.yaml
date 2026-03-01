@@ -23,7 +23,7 @@ blueprint:
         - Define a normal range (min/max) for each type.
 
       - **Hysteresis:**
-        - A configurable hysteresis value prevents alarm flickering at threshold boundaries.
+        - Separate configurable hysteresis values for temperature and humidity prevent alarm flickering at threshold boundaries.
         - Example: Alarm at >26 °C, all-clear only at <25 °C (1 °C hysteresis).
 
       - **Priority:**
@@ -125,10 +125,10 @@ blueprint:
               step: 1
               unit_of_measurement: "%"
               mode: box
-        hysteresis:
-          name: Hysteresis
+        temp_hysteresis:
+          name: Temperature Hysteresis
           description: >
-            Hysteresis value to prevent alarm flickering at threshold boundaries.
+            Hysteresis value for temperature sensors to prevent alarm flickering at threshold boundaries.
             This value is subtracted from the upper limit or added to the lower limit for the all-clear threshold.
 
 
@@ -142,7 +142,26 @@ blueprint:
               min: 0
               max: 10
               step: 0.1
-              unit_of_measurement: "°C / %"
+              unit_of_measurement: "°C"
+              mode: box
+        hum_hysteresis:
+          name: Humidity Hysteresis
+          description: >
+            Hysteresis value for humidity sensors to prevent alarm flickering at threshold boundaries.
+            This value is subtracted from the upper limit or added to the lower limit for the all-clear threshold.
+
+
+            **Example:** Upper limit 70 % with hysteresis 3 -> Alarm at >70 %, all-clear at <67 %.
+
+
+            Set to 0 to disable hysteresis.
+          default: 3.0
+          selector:
+            number:
+              min: 0
+              max: 20
+              step: 0.5
+              unit_of_measurement: "%"
               mode: box
         alarm_active_helper:
           name: "Acoustic Alarm Helper (Optional)"
@@ -1273,14 +1292,15 @@ variables:
   temp_max: !input temp_max
   hum_min: !input hum_min
   hum_max: !input hum_max
-  hysteresis: !input hysteresis
+  temp_hysteresis: !input temp_hysteresis
+  hum_hysteresis: !input hum_hysteresis
   alarm_active_helper: !input alarm_active_helper
 
   # Hysteresis-adjusted thresholds for all-clear
-  temp_clear_min: "{{ (temp_min | float) + (hysteresis | float) }}"
-  temp_clear_max: "{{ (temp_max | float) - (hysteresis | float) }}"
-  hum_clear_min: "{{ (hum_min | float) + (hysteresis | float) }}"
-  hum_clear_max: "{{ (hum_max | float) - (hysteresis | float) }}"
+  temp_clear_min: "{{ (temp_min | float) + (temp_hysteresis | float) }}"
+  temp_clear_max: "{{ (temp_max | float) - (temp_hysteresis | float) }}"
+  hum_clear_min: "{{ (hum_min | float) + (hum_hysteresis | float) }}"
+  hum_clear_max: "{{ (hum_max | float) - (hum_hysteresis | float) }}"
 
   # Trigger context
   trigger_entity: "{{ trigger.entity_id }}"
