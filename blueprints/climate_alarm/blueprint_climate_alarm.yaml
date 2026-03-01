@@ -3,7 +3,7 @@ blueprint:
   description: >
     # Climate Alarm - Temperature & Humidity Monitoring
 
-    **Version: 1.0**
+    **Version: 1.1**
 
 
     Real-time monitoring of temperature and humidity sensors with configurable normal ranges, hysteresis, and priority logic.
@@ -39,8 +39,6 @@ blueprint:
         - To-Do list integration with action buttons.
         - Custom actions.
 
-      - **Prerequisites:**
-        - Create 2 input boolean helpers (temperature alarm status, humidity alarm status).
     </details>
 
 
@@ -51,7 +49,7 @@ blueprint:
       name: "Sensor Settings *"
       icon: mdi:thermometer-alert
       description: >
-        Configure sensors, normal ranges, hysteresis, and alarm status helpers.
+        Configure sensors, normal ranges, and hysteresis.
       collapsed: true
       input:
         temperature_sensors:
@@ -146,27 +144,17 @@ blueprint:
               step: 0.1
               unit_of_measurement: "°C / %"
               mode: box
-        temp_alarm_boolean:
-          name: "Temperature Alarm Status Helper *"
+        alarm_active_helper:
+          name: "Acoustic Alarm Helper (Optional)"
           description: >
-            Select an input boolean helper to store the temperature alarm status.
-            Create one under Settings -> Devices & Services -> Helpers -> Toggle (Input Boolean).
+            Optional input boolean helper for acoustic alarm control.
+            This helper is turned ON when an alarm triggers.
+            Create your own automation that watches this helper to trigger
+            your acoustic alarm system (e.g., webhook, siren).
 
 
-            This helper is automatically toggled on/off and tracks whether a temperature alarm is currently active.
-          default: []
-          selector:
-            entity:
-              filter:
-                domain: input_boolean
-        hum_alarm_boolean:
-          name: "Humidity Alarm Status Helper *"
-          description: >
-            Select an input boolean helper to store the humidity alarm status.
-            Create one under Settings -> Devices & Services -> Helpers -> Toggle (Input Boolean).
-
-
-            This helper is automatically toggled on/off and tracks whether a humidity alarm is currently active.
+            The alarm notification includes a 'Silence Alarm' button to turn it OFF.
+            Automatically turned OFF when all sensors return to normal range.
           default: []
           selector:
             entity:
@@ -1286,8 +1274,7 @@ variables:
   hum_min: !input hum_min
   hum_max: !input hum_max
   hysteresis: !input hysteresis
-  temp_alarm_boolean: !input temp_alarm_boolean
-  hum_alarm_boolean: !input hum_alarm_boolean
+  alarm_active_helper: !input alarm_active_helper
 
   # Hysteresis-adjusted thresholds for all-clear
   temp_clear_min: "{{ (temp_min | float) + (hysteresis | float) }}"
@@ -1300,9 +1287,46 @@ variables:
   trigger_value: "{{ trigger.to_state.state | float(0) }}"
   trigger_sensor_name: "{{ state_attr(trigger.entity_id, 'friendly_name') | default(trigger.entity_id) }}"
 
-  # Current alarm states
-  is_temp_alarm_active: "{{ states(temp_alarm_boolean) == 'on' if temp_alarm_boolean else false }}"
-  is_hum_alarm_active: "{{ states(hum_alarm_boolean) == 'on' if hum_alarm_boolean else false }}"
+  # Previous state (for transition detection)
+  from_state_value: "{{ trigger.from_state.state | float(none) }}"
+
+  # Temperature transition detection
+  from_temp_not_in_alarm: >-
+    {{ from_state_value is none or
+       (from_state_value <= (temp_max | float) and from_state_value >= (temp_min | float)) }}
+  from_temp_not_in_clear: >-
+    {{ from_state_value is not none and
+       (from_state_value > (temp_clear_max | float) or
+        from_state_value < (temp_clear_min | float)) }}
+
+  # Humidity transition detection
+  from_hum_not_in_alarm: >-
+    {{ from_state_value is none or
+       (from_state_value <= (hum_max | float) and from_state_value >= (hum_min | float)) }}
+  from_hum_not_in_clear: >-
+    {{ from_state_value is not none and
+       (from_state_value > (hum_clear_max | float) or
+        from_state_value < (hum_clear_min | float)) }}
+
+  # Live alarm status checks (replace input_boolean state lookups)
+  any_temp_in_alarm: >-
+    {% set ns = namespace(found=false) %}
+    {% for sid in temperature_sensors %}
+      {% set val = states(sid) | float(none) %}
+      {% if val is not none and (val > (temp_max | float) or val < (temp_min | float)) %}
+        {% set ns.found = true %}
+      {% endif %}
+    {% endfor %}
+    {{ ns.found }}
+  any_hum_in_alarm: >-
+    {% set ns = namespace(found=false) %}
+    {% for sid in humidity_sensors %}
+      {% set val = states(sid) | float(none) %}
+      {% if val is not none and (val > (hum_max | float) or val < (hum_min | float)) %}
+        {% set ns.found = true %}
+      {% endif %}
+    {% endfor %}
+    {{ ns.found }}
 
   # All sensors alarm list (for notifications)
   all_temp_alarm_sensors: >-
@@ -1482,6 +1506,10 @@ variables:
     {% if temp_alarm_notify_tag != [] %}
       {% set message.data = dict(message.data, **{ 'tag': temp_alarm_notify_tag }) %}
     {% endif %}
+    {% if alarm_active_helper not in [[], '', none] %}
+      {% set actions = [{'action': 'SILENCE_ALARM', 'title': 'Silence Alarm'}] %}
+      {% set message.data = dict(message.data, **{ 'actions': actions }) %}
+    {% endif %}
     {{ message.data }}
 
   temp_alarm_device_message_data_action_button: >-
@@ -1519,6 +1547,9 @@ variables:
       {'action': temp_alarm_action_button_todo, 'title': temp_alarm_action_button_todo},
       {'action': temp_alarm_action_button_cancel, 'title': temp_alarm_action_button_cancel}
     ] %}
+    {% if alarm_active_helper not in [[], '', none] %}
+      {% set actions = actions + [{'action': 'SILENCE_ALARM', 'title': 'Silence Alarm'}] %}
+    {% endif %}
     {% set message.data = dict(message.data, **{ 'actions': actions }) %}
     {{ message.data }}
 
@@ -1586,6 +1617,10 @@ variables:
     {% if hum_alarm_notify_tag != [] %}
       {% set message.data = dict(message.data, **{ 'tag': hum_alarm_notify_tag }) %}
     {% endif %}
+    {% if alarm_active_helper not in [[], '', none] %}
+      {% set actions = [{'action': 'SILENCE_ALARM', 'title': 'Silence Alarm'}] %}
+      {% set message.data = dict(message.data, **{ 'actions': actions }) %}
+    {% endif %}
     {{ message.data }}
 
   hum_alarm_device_message_data_action_button: >-
@@ -1623,6 +1658,9 @@ variables:
       {'action': hum_alarm_action_button_todo, 'title': hum_alarm_action_button_todo},
       {'action': hum_alarm_action_button_cancel, 'title': hum_alarm_action_button_cancel}
     ] %}
+    {% if alarm_active_helper not in [[], '', none] %}
+      {% set actions = actions + [{'action': 'SILENCE_ALARM', 'title': 'Silence Alarm'}] %}
+    {% endif %}
     {% set message.data = dict(message.data, **{ 'actions': actions }) %}
     {{ message.data }}
 
@@ -1703,12 +1741,16 @@ action:
                   {{ (trigger_value | float > temp_max | float) or
                      (trigger_value | float < temp_min | float) }}
               - condition: template
-                value_template: "{{ not is_temp_alarm_active }}"
+                value_template: "{{ from_temp_not_in_alarm }}"
             sequence:
-              # Set alarm boolean
-              - action: input_boolean.turn_on
-                target:
-                  entity_id: !input temp_alarm_boolean
+              # -- Acoustic Alarm Helper ON --
+              - choose:
+                - conditions:
+                    - "{{ alarm_active_helper not in [[], '', none] }}"
+                  sequence:
+                    - action: input_boolean.turn_on
+                      target:
+                        entity_id: !input alarm_active_helper
               # -- Custom Actions --
               - choose:
                 - conditions:
@@ -1784,10 +1826,14 @@ action:
                 - alias: "Temp Alarm - Action Buttons warten"
                   conditions:
                     - "{{ temp_alarm_include_device_notify == 'enabled' }}"
-                    - "{{ temp_alarm_notify_action_buttons != 'disabled' }}"
+                    - "{{ temp_alarm_notify_action_buttons != 'disabled' or alarm_active_helper not in [[], '', none] }}"
                     - "{{ temp_alarm_notify_device | length > 0 }}"
                   sequence:
                     - wait_for_trigger:
+                        - trigger: event
+                          event_type: mobile_app_notification_action
+                          event_data:
+                            action: "SILENCE_ALARM"
                         - trigger: event
                           event_type: mobile_app_notification_action
                           event_data:
@@ -1862,6 +1908,11 @@ action:
                                                 data:
                                                   tag: "{{ temp_alarm_notify_tag }}"
                                               continue_on_error: true
+                            - conditions: "{{ wait.trigger.event.data.action == 'SILENCE_ALARM' }}"
+                              sequence:
+                                - action: input_boolean.turn_off
+                                  target:
+                                    entity_id: !input alarm_active_helper
 
           # -- TEMPERATUR-ENTWARNUNG: Alle Sensoren wieder im Bereich --
           - alias: "Temperatur wieder im Normbereich - Entwarnung"
@@ -1871,14 +1922,10 @@ action:
                   {{ (trigger_value | float <= temp_clear_max | float) and
                      (trigger_value | float >= temp_clear_min | float) }}
               - condition: template
-                value_template: "{{ is_temp_alarm_active }}"
+                value_template: "{{ from_temp_not_in_clear }}"
               - condition: template
                 value_template: "{{ all_temp_in_range }}"
             sequence:
-              # Clear alarm boolean
-              - action: input_boolean.turn_off
-                target:
-                  entity_id: !input temp_alarm_boolean
               # -- Custom Actions --
               - choose:
                 - conditions:
@@ -1927,8 +1974,16 @@ action:
                 - alias: "Unterdrueckter Feuchtigkeitsalarm nachholen"
                   conditions:
                     - condition: template
-                      value_template: "{{ states(hum_alarm_boolean) == 'on' if hum_alarm_boolean else false }}"
+                      value_template: "{{ any_hum_in_alarm }}"
                   sequence:
+                    # Re-activate acoustic alarm helper for humidity alarm
+                    - choose:
+                      - conditions:
+                          - "{{ alarm_active_helper not in [[], '', none] }}"
+                        sequence:
+                          - action: input_boolean.turn_on
+                            target:
+                              entity_id: !input alarm_active_helper
                     # Fire humidity alarm notifications now
                     - choose:
                       - conditions:
@@ -1969,6 +2024,37 @@ action:
                               entity_id: !input hum_alarm_dashboard_text_helper
                             data:
                               value: "{{ now().strftime('%d.%m.%Y %H:%M') }} - {{ hum_alarm_notify_message[:220] }}"
+                    # -- Silence Button Wait (deferred hum alarm) --
+                    - choose:
+                      - conditions:
+                          - "{{ alarm_active_helper not in [[], '', none] }}"
+                          - "{{ hum_alarm_include_device_notify == 'enabled' }}"
+                          - "{{ hum_alarm_notify_device | length > 0 }}"
+                        sequence:
+                          - wait_for_trigger:
+                              - trigger: event
+                                event_type: mobile_app_notification_action
+                                event_data:
+                                  action: "SILENCE_ALARM"
+                            timeout: "02:00:00"
+                            continue_on_timeout: true
+                          - choose:
+                            - conditions:
+                                - "{{ wait.trigger is defined and wait.trigger.idx is defined }}"
+                                - "{{ wait.trigger.event.data.action == 'SILENCE_ALARM' }}"
+                              sequence:
+                                - action: input_boolean.turn_off
+                                  target:
+                                    entity_id: !input alarm_active_helper
+              # -- Acoustic Alarm Helper OFF (only if no humidity alarm active) --
+              - choose:
+                - conditions:
+                    - "{{ alarm_active_helper not in [[], '', none] }}"
+                    - "{{ not any_hum_in_alarm }}"
+                  sequence:
+                    - action: input_boolean.turn_off
+                      target:
+                        entity_id: !input alarm_active_helper
 
     # ========================================================
     # HUMIDITY SENSOR CHANGE
@@ -1987,19 +2073,23 @@ action:
                   {{ (trigger_value | float > hum_max | float) or
                      (trigger_value | float < hum_min | float) }}
               - condition: template
-                value_template: "{{ not is_hum_alarm_active }}"
+                value_template: "{{ from_hum_not_in_alarm }}"
             sequence:
-              # Set alarm boolean
-              - action: input_boolean.turn_on
-                target:
-                  entity_id: !input hum_alarm_boolean
               # Check priority: only notify if no temp alarm active
               - choose:
                 - alias: "Kein Temperaturalarm aktiv - Feuchtigkeitsalarm senden"
                   conditions:
                     - condition: template
-                      value_template: "{{ not is_temp_alarm_active }}"
+                      value_template: "{{ not any_temp_in_alarm }}"
                   sequence:
+                    # -- Acoustic Alarm Helper ON --
+                    - choose:
+                      - conditions:
+                          - "{{ alarm_active_helper not in [[], '', none] }}"
+                        sequence:
+                          - action: input_boolean.turn_on
+                            target:
+                              entity_id: !input alarm_active_helper
                     # -- Custom Actions --
                     - choose:
                       - conditions:
@@ -2075,10 +2165,14 @@ action:
                       - alias: "Hum Alarm - Action Buttons warten"
                         conditions:
                           - "{{ hum_alarm_include_device_notify == 'enabled' }}"
-                          - "{{ hum_alarm_notify_action_buttons != 'disabled' }}"
+                          - "{{ hum_alarm_notify_action_buttons != 'disabled' or alarm_active_helper not in [[], '', none] }}"
                           - "{{ hum_alarm_notify_device | length > 0 }}"
                         sequence:
                           - wait_for_trigger:
+                              - trigger: event
+                                event_type: mobile_app_notification_action
+                                event_data:
+                                  action: "SILENCE_ALARM"
                               - trigger: event
                                 event_type: mobile_app_notification_action
                                 event_data:
@@ -2153,6 +2247,11 @@ action:
                                                       data:
                                                         tag: "{{ hum_alarm_notify_tag }}"
                                                     continue_on_error: true
+                                  - conditions: "{{ wait.trigger.event.data.action == 'SILENCE_ALARM' }}"
+                                    sequence:
+                                      - action: input_boolean.turn_off
+                                        target:
+                                          entity_id: !input alarm_active_helper
 
           # -- FEUCHTIGKEITS-ENTWARNUNG: Alle Sensoren wieder im Bereich --
           - alias: "Feuchtigkeit wieder im Normbereich - Entwarnung"
@@ -2162,20 +2261,16 @@ action:
                   {{ (trigger_value | float <= hum_clear_max | float) and
                      (trigger_value | float >= hum_clear_min | float) }}
               - condition: template
-                value_template: "{{ is_hum_alarm_active }}"
+                value_template: "{{ from_hum_not_in_clear }}"
               - condition: template
                 value_template: "{{ all_hum_in_range }}"
             sequence:
-              # Clear alarm boolean
-              - action: input_boolean.turn_off
-                target:
-                  entity_id: !input hum_alarm_boolean
               # Only send clear notifications if no temp alarm is active
               - choose:
                 - alias: "Kein Temperaturalarm aktiv - Entwarnung senden"
                   conditions:
                     - condition: template
-                      value_template: "{{ not is_temp_alarm_active }}"
+                      value_template: "{{ not any_temp_in_alarm }}"
                   sequence:
                     # -- Custom Actions --
                     - choose:
@@ -2220,3 +2315,11 @@ action:
                               entity_id: !input hum_clear_dashboard_text_helper
                             data:
                               value: "{{ now().strftime('%d.%m.%Y %H:%M') }} - {{ hum_clear_notify_message[:220] }}"
+                    # -- Acoustic Alarm Helper OFF --
+                    - choose:
+                      - conditions:
+                          - "{{ alarm_active_helper not in [[], '', none] }}"
+                        sequence:
+                          - action: input_boolean.turn_off
+                            target:
+                              entity_id: !input alarm_active_helper

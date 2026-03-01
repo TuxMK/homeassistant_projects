@@ -49,17 +49,13 @@ Dieser Blueprint ueberwacht ausgewaehlte Temperatur- und Feuchtigkeitssensoren i
   - Eigene Aktionen fuer jeden Alarm-/Entwarnungs-Typ
   - Template-Variablen fuer flexible Nachrichten
 
+- **Akustischer Alarm** (Optional)
+  - Automatisches Ein-/Ausschalten eines Input Boolean Helpers bei Alarm/Entwarnung
+  - "Silence Alarm" Button in Push-Benachrichtigungen
+  - Integration mit externen Alarmsystemen (Webhooks, Sirenen)
+
 - **Globale Bedingungen**
   - Optionale Bedingungen fuer die gesamte Automation
-
-## Voraussetzungen
-
-Vor der Nutzung muessen **zwei Input Boolean Helper** erstellt werden:
-
-1. **Temperatur-Alarm Status** (z.B. `input_boolean.temp_alarm_wohnzimmer`)
-2. **Feuchtigkeits-Alarm Status** (z.B. `input_boolean.hum_alarm_wohnzimmer`)
-
-Diese werden unter **Einstellungen > Geraete & Dienste > Helfer > Schalter** erstellt und speichern den aktuellen Alarm-Status. Sie ueberleben HA-Neustarts.
 
 ## Installation
 
@@ -91,8 +87,7 @@ Diese werden unter **Einstellungen > Geraete & Dienste > Helfer > Schalter** ers
 | Feuchtigkeit Untergrenze | Minimale Feuchtigkeit in % | 30 |
 | Feuchtigkeit Obergrenze | Maximale Feuchtigkeit in % | 70 |
 | Hysterese | Abstand fuer Entwarnung | 1.0 |
-| Temp-Alarm Boolean | Input Boolean Helper | - |
-| Hum-Alarm Boolean | Input Boolean Helper | - |
+| Akustischer Alarm Helper | Optionaler Input Boolean Helper fuer akustische Alarmsteuerung | - |
 
 ### Hysterese erklaert
 
@@ -130,20 +125,19 @@ Verfuegbare Template-Variablen:
 | `{{hysteresis}}` | Hysterese-Wert |
 | `{{all_temp_alarm_sensors}}` | Alle Temperatursensoren im Alarm |
 | `{{all_hum_alarm_sensors}}` | Alle Feuchtigkeitssensoren im Alarm |
-| `{{is_temp_alarm_active}}` | Temperaturalarm aktiv (true/false) |
-| `{{is_hum_alarm_active}}` | Feuchtigkeitsalarm aktiv (true/false) |
+| `{{any_temp_in_alarm}}` | Temperatursensor aktuell im Alarmbereich (true/false) |
+| `{{any_hum_in_alarm}}` | Feuchtigkeitssensor aktuell im Alarmbereich (true/false) |
+| `{{alarm_active_helper}}` | Entity ID des akustischen Alarm Helpers |
 
 ## Beispiel-Automatisierung
 
 Nach dem Import des Blueprints:
 
-1. Input Boolean Helper erstellen (2 Stueck)
-2. Neue Automatisierung aus Blueprint erstellen
-3. Sensoren auswaehlen
-4. Normbereiche und Hysterese einstellen
-5. Input Boolean Helper zuweisen
-6. Gewuenschte Benachrichtigungsmethoden aktivieren
-7. Geraete fuer Push-Benachrichtigungen auswaehlen
+1. Neue Automatisierung aus Blueprint erstellen
+2. Sensoren auswaehlen
+3. Normbereiche und Hysterese einstellen
+4. Gewuenschte Benachrichtigungsmethoden aktivieren
+5. Geraete fuer Push-Benachrichtigungen auswaehlen
 
 ## Lizenz
 
