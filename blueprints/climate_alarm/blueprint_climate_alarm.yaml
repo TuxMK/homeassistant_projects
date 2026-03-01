@@ -1,46 +1,46 @@
 blueprint:
-  name: Climate Alarm - Temperatur & Feuchtigkeitsueberwachung
+  name: Climate Alarm - Temperature & Humidity Monitoring
   description: >
-    # Climate Alarm - Temperatur & Feuchtigkeitsueberwachung
+    # Climate Alarm - Temperature & Humidity Monitoring
 
     **Version: 1.0**
 
 
-    Echtzeit-Ueberwachung von Temperatur- und Feuchtigkeitssensoren mit konfigurierbaren Normbereichen, Hysterese und Prioritaetslogik.
+    Real-time monitoring of temperature and humidity sensors with configurable normal ranges, hysteresis, and priority logic.
 
 
     <details>
-    <summary><b>Funktionsweise:</b></summary>
+    <summary><b>The Automation Process:</b></summary>
 
-      - **Echtzeit-Trigger:**
-        - Reagiert sofort auf Zustandsaenderungen der ausgewaehlten Sensoren.
-        - Alarm wird ausgeloest, sobald ein Sensorwert den Normbereich verlaesst.
-        - Entwarnung wird gesendet, sobald alle Sensoren wieder im Normbereich sind.
+      - **Real-Time Triggers:**
+        - Reacts immediately to state changes of the selected sensors.
+        - An alarm is triggered as soon as a sensor value leaves the normal range.
+        - An all-clear notification is sent once all sensors are back within the normal range.
 
-      - **Sensor-Auswahl:**
-        - Waehle einen oder mehrere Temperatursensoren.
-        - Waehle einen oder mehrere Feuchtigkeitssensoren.
-        - Definiere jeweils einen Normbereich (Min/Max).
+      - **Sensor Selection:**
+        - Select one or more temperature sensors.
+        - Select one or more humidity sensors.
+        - Define a normal range (min/max) for each type.
 
-      - **Hysterese:**
-        - Konfigurierbarer Hysterese-Wert verhindert Alarm-Flackern an Grenzwerten.
-        - Beispiel: Alarm bei >26 Grad C, Entwarnung erst bei <25 Grad C (1 Grad Hysterese).
+      - **Hysteresis:**
+        - A configurable hysteresis value prevents alarm flickering at threshold boundaries.
+        - Example: Alarm at >26 °C, all-clear only at <25 °C (1 °C hysteresis).
 
-      - **Prioritaet:**
-        - Temperaturalarme haben Vorrang vor Feuchtigkeitsalarmen.
-        - Bei gleichzeitigem Temperatur- und Feuchtigkeitsalarm werden nur Temperatur-Aktionen ausgefuehrt.
-        - Feuchtigkeitsalarme werden nachgeholt, sobald der Temperaturalarm endet.
+      - **Priority:**
+        - Temperature alarms take priority over humidity alarms.
+        - When both temperature and humidity alarms occur simultaneously, only temperature actions are executed.
+        - Humidity alarms are deferred and processed once the temperature alarm ends.
 
-      - **Benachrichtigungsoptionen:**
-        - Getrennte Aktionen fuer Temperatur- und Feuchtigkeitsalarme.
-        - Push-Benachrichtigungen (iOS/Android).
-        - UI-Benachrichtigungen.
-        - Dashboard-Benachrichtigungen via Text Helper.
-        - To-Do Liste Integration mit Action Buttons.
-        - Custom Actions.
+      - **Notification Options:**
+        - Separate actions for temperature and humidity alarms.
+        - Push notifications (iOS/Android).
+        - UI notifications.
+        - Dashboard notifications via text helper.
+        - To-Do list integration with action buttons.
+        - Custom actions.
 
-      - **Voraussetzungen:**
-        - 2 Input Boolean Helper erstellen (Temperatur-Alarm-Status, Feuchtigkeits-Alarm-Status).
+      - **Prerequisites:**
+        - Create 2 input boolean helpers (temperature alarm status, humidity alarm status).
     </details>
 
 
@@ -48,18 +48,18 @@ blueprint:
   domain: automation
   input:
     sensor_settings:
-      name: "Sensor-Einstellungen *"
+      name: "Sensor Settings *"
       icon: mdi:thermometer-alert
       description: >
-        Sensoren, Normbereiche, Hysterese und Alarm-Status-Helper konfigurieren.
+        Configure sensors, normal ranges, hysteresis, and alarm status helpers.
       collapsed: true
       input:
         temperature_sensors:
-          name: Temperatursensoren (Optional)
+          name: Temperature Sensors (Optional)
           description: >
-            Waehle die Temperatursensoren aus, die ueberwacht werden sollen.
-            Alle ausgewaehlten Sensoren teilen sich denselben Normbereich.
-            Fuer unterschiedliche Bereiche (z.B. Kuehlschrank vs. Wohnzimmer) erstelle separate Automationen.
+            Select the temperature sensors you would like to monitor.
+            All selected sensors share the same normal range.
+            For different ranges (e.g., refrigerator vs. living room), create separate automations.
           default: []
           selector:
             entity:
@@ -68,10 +68,10 @@ blueprint:
                 device_class: temperature
               multiple: true
         humidity_sensors:
-          name: Feuchtigkeitssensoren (Optional)
+          name: Humidity Sensors (Optional)
           description: >
-            Waehle die Feuchtigkeitssensoren aus, die ueberwacht werden sollen.
-            Alle ausgewaehlten Sensoren teilen sich denselben Normbereich.
+            Select the humidity sensors you would like to monitor.
+            All selected sensors share the same normal range.
           default: []
           selector:
             entity:
@@ -80,9 +80,9 @@ blueprint:
                 device_class: humidity
               multiple: true
         temp_min:
-          name: "Temperatur Untergrenze *"
+          name: "Temperature Lower Limit *"
           description: >
-            Minimale Temperatur in Grad Celsius. Ein Alarm wird ausgeloest, wenn ein Sensor diesen Wert unterschreitet.
+            Minimum temperature in degrees Celsius. An alarm is triggered when a sensor falls below this value.
           default: 18
           selector:
             number:
@@ -92,9 +92,9 @@ blueprint:
               unit_of_measurement: "°C"
               mode: box
         temp_max:
-          name: "Temperatur Obergrenze *"
+          name: "Temperature Upper Limit *"
           description: >
-            Maximale Temperatur in Grad Celsius. Ein Alarm wird ausgeloest, wenn ein Sensor diesen Wert ueberschreitet.
+            Maximum temperature in degrees Celsius. An alarm is triggered when a sensor exceeds this value.
           default: 26
           selector:
             number:
@@ -104,9 +104,9 @@ blueprint:
               unit_of_measurement: "°C"
               mode: box
         hum_min:
-          name: "Feuchtigkeit Untergrenze *"
+          name: "Humidity Lower Limit *"
           description: >
-            Minimale relative Luftfeuchtigkeit in Prozent.
+            Minimum relative humidity in percent.
           default: 30
           selector:
             number:
@@ -116,9 +116,9 @@ blueprint:
               unit_of_measurement: "%"
               mode: box
         hum_max:
-          name: "Feuchtigkeit Obergrenze *"
+          name: "Humidity Upper Limit *"
           description: >
-            Maximale relative Luftfeuchtigkeit in Prozent.
+            Maximum relative humidity in percent.
           default: 70
           selector:
             number:
@@ -128,16 +128,16 @@ blueprint:
               unit_of_measurement: "%"
               mode: box
         hysteresis:
-          name: Hysterese
+          name: Hysteresis
           description: >
-            Hysterese-Wert zur Vermeidung von Alarm-Flackern an den Grenzwerten.
-            Der Wert wird fuer die Entwarnung vom Grenzwert abgezogen (Obergrenze) bzw. addiert (Untergrenze).
+            Hysteresis value to prevent alarm flickering at threshold boundaries.
+            This value is subtracted from the upper limit or added to the lower limit for the all-clear threshold.
 
 
-            **Beispiel:** Obergrenze 26 Grad C mit Hysterese 1 -> Alarm bei >26 Grad C, Entwarnung bei <25 Grad C.
+            **Example:** Upper limit 26 °C with hysteresis 1 -> Alarm at >26 °C, all-clear at <25 °C.
 
 
-            Setze den Wert auf 0, um keine Hysterese zu verwenden.
+            Set to 0 to disable hysteresis.
           default: 1.0
           selector:
             number:
@@ -147,26 +147,26 @@ blueprint:
               unit_of_measurement: "°C / %"
               mode: box
         temp_alarm_boolean:
-          name: "Temperatur-Alarm Status Helper *"
+          name: "Temperature Alarm Status Helper *"
           description: >
-            Waehle einen Input Boolean Helper, der den Temperatur-Alarm-Status speichert.
-            Erstelle diesen unter Einstellungen -> Geraete & Dienste -> Helfer -> Schalter (Input Boolean).
+            Select an input boolean helper to store the temperature alarm status.
+            Create one under Settings -> Devices & Services -> Helpers -> Toggle (Input Boolean).
 
 
-            Dieser Helper wird automatisch ein-/ausgeschaltet und speichert ob ein Temperaturalarm aktiv ist.
+            This helper is automatically toggled on/off and tracks whether a temperature alarm is currently active.
           default: []
           selector:
             entity:
               filter:
                 domain: input_boolean
         hum_alarm_boolean:
-          name: "Feuchtigkeits-Alarm Status Helper *"
+          name: "Humidity Alarm Status Helper *"
           description: >
-            Waehle einen Input Boolean Helper, der den Feuchtigkeits-Alarm-Status speichert.
-            Erstelle diesen unter Einstellungen -> Geraete & Dienste -> Helfer -> Schalter (Input Boolean).
+            Select an input boolean helper to store the humidity alarm status.
+            Create one under Settings -> Devices & Services -> Helpers -> Toggle (Input Boolean).
 
 
-            Dieser Helper wird automatisch ein-/ausgeschaltet und speichert ob ein Feuchtigkeitsalarm aktiv ist.
+            This helper is automatically toggled on/off and tracks whether a humidity alarm is currently active.
           default: []
           selector:
             entity:
@@ -174,32 +174,32 @@ blueprint:
                 domain: input_boolean
 
     # ============================================================
-    # TEMPERATUR-ALARM BENACHRICHTIGUNGEN
+    # TEMPERATURE ALARM NOTIFICATIONS
     # ============================================================
     temp_alarm_notify:
-      name: "Temperatur-Alarm - Benachrichtigungen"
+      name: "Temperature Alarm - Notifications & Actions"
       icon: mdi:thermometer-high
       description: >
-        Aktionen die ausgefuehrt werden, wenn ein Temperatursensor den Normbereich verlaesst.
+        Actions to execute when a temperature sensor leaves the normal range.
       collapsed: true
       input:
         # -- Device Notification --
         temp_alarm_include_device_notify:
-          name: Geraete-Benachrichtigung (Optional)
+          name: Use The Easy Notify - Device Notification Options (Optional)
           description: >
-            Push-Benachrichtigung an mobile Geraete senden.
+            Enabling this option will send push notifications to the selected devices below when a temperature alarm is triggered.
           default: disabled
           selector:
             select:
               options:
-                - label: Aktivieren
+                - label: Enable Device Notification
                   value: "enabled"
-                - label: Deaktivieren
+                - label: Disable Device Notification
                   value: "disabled"
         temp_alarm_notify_device:
-          name: Geraete
+          name: Devices Notified (Optional)
           description: >
-            Waehle die Geraete, die benachrichtigt werden sollen.
+            If you've enabled device notifications above, please select the devices to receive the notifications.
           default: []
           selector:
             device:
@@ -207,70 +207,81 @@ blueprint:
                 - integration: mobile_app
               multiple: true
         temp_alarm_notify_title:
-          name: Titel
+          name: Title
           description: >
-            Titel der Push-Benachrichtigung.
-          default: Temperaturalarm!
+            Enter in the notification title of your message.
+          default: Temperature Alert!
           selector:
             text:
         temp_alarm_notify_message:
-          name: Nachricht
+          name: Message
           description: >
-            Nachricht der Push-Benachrichtigung. Verfuegbare Variablen:
+            Enter in the notification message. Available variables:
 
-            - `{{trigger_sensor_name}}` - Sensorname
+            - `{{trigger_sensor_name}}` - Sensor name
 
-            - `{{trigger_value}}` - Aktueller Messwert
+            - `{{trigger_value}}` - Current reading
 
-            - `{{temp_min}}` / `{{temp_max}}` - Grenzwerte
+            - `{{temp_min}}` / `{{temp_max}}` - Threshold values
 
-            - `{{all_temp_alarm_sensors}}` - Alle Sensoren im Alarm
-          default: "{{trigger_sensor_name}}: {{trigger_value}} °C liegt ausserhalb des Normbereichs ({{temp_min}} - {{temp_max}} °C)"
+            - `{{all_temp_alarm_sensors}}` - All sensors currently in alarm
+          default: "Temperature Alert! {{trigger_sensor_name}}: {{trigger_value}} °C is outside the normal range ({{temp_min}} - {{temp_max}} °C)"
           selector:
             text:
               multiline: true
         temp_alarm_notify_tag:
-          name: Notification Tag
+          name: Device Notification Tag
           description: >
-            Ein Tag haelt Benachrichtigungen organisiert. Eine neue Benachrichtigung mit gleichem Tag ersetzt die vorherige.
-            Leer lassen fuer separate Benachrichtigungen.
+            You can use a tag to keep your notifications organized.
+            When a new notification with the same tag is sent, it replaces the old one, so you won't get cluttered with duplicates.
+
+
+            If this input is left blank, no tag will be applied and each notification will be treated as separate.
           default: []
           selector:
             text:
         temp_alarm_notify_interruption_level:
-          name: Interruption Level - iOS
+          name: Interruption Level - iOS Only
           description: >
-            Unterbrechungsstufe fuer iOS 15+.
+            On devices running iOS 15 and later, you can configure the interruption level for your notifications to ensure they are delivered according to your preferences.
+            Choose the desired interruption level from the dropdown list.
           default: active
           selector:
             select:
               mode: dropdown
               options:
-                - label: Standard
+                - label: Default
                   value: "active"
-                - label: Kritisch
+                - label: Critical Notifications
                   value: "critical"
-                - label: Zeitkritisch
+                - label: Time Sensitive Notifications
                   value: "time-sensitive"
-                - label: Leise (ohne Bildschirm zu wecken)
+                - label: Quiet Notifications Without Waking Screen
                   value: "passive"
         temp_alarm_notify_sound:
-          name: Benachrichtigungston - iOS
+          name: Notification Sound - iOS Only
           description: >
-            Dateiname des Benachrichtigungstons inkl. Dateiendung.
+            Enter the filename of the notification sound, including the file extension.
           default: []
           selector:
             text:
         temp_alarm_notify_data:
-          name: Android Optionen (Optional)
+          name: Android Only Options (Optional)
           description: >
-            **High Priority** - Sofortige Zustellung.
+            **High Priority** notifications ensure that you receive important alerts immediately.
+            These notifications bypass normal delivery delays and are delivered instantly to your device.
 
-            **Sticky Notification** - Bleibt bis zum manuellen Entfernen.
 
-            **Notification Channel** - Eigener Benachrichtigungskanal.
+            **Sticky Notification** ensures that important alerts are not dismissed when selected. They remain on your notification screen until you actively clear or swipe them away.
 
-            **Icon** - Eigenes Icon.
+
+            **Notification Channel** allows you to easily organize different notification settings,
+            including notification sounds, vibrations, and other device-specific features.
+            If you choose this option, please enter your desired channel name below.
+
+
+            **Icon** allows you to replace the default Home Assistant icon with one of your choice.
+            If selected, choose your preferred icon using the **Icon - Android Only** option below, and set the icon colour using **Icon Colour - Android Only**.
           default: []
           selector:
             select:
@@ -285,78 +296,84 @@ blueprint:
                 - label: Icon
                   value: "icon"
         temp_alarm_notify_channel:
-          name: Notification Channel - Android
+          name: Notification Channel - Android Only
           description: >
-            Name des Benachrichtigungskanals.
+            If you have chosen to use a notification channel, simply enter the name of an existing channel or create a new one by entering a name here.
           default: []
           selector:
             text:
         temp_alarm_notify_icon:
-          name: Icon - Android
+          name: Icon - Android Only
           description: >
-            Eigenes Icon fuer die Benachrichtigung.
+            Select a custom icon to replace the default Home Assistant icon in the notification.
+            This setting applies only if the **Icon** option is selected in **Android Only Options** above.
           default: "mdi:thermometer-alert"
           selector:
             icon:
         temp_alarm_notify_icon_colour:
-          name: Icon Farbe - Android
+          name: Icon Colour - Android Only
           description: >
-            Farbe des Benachrichtigungsicons.
+            Choose a colour for your custom notification icon.
+            This setting applies only if the **Icon** option is selected in **Android Only Options** above.
           default: [244, 67, 54]
           selector:
             color_rgb:
         # -- UI Notification --
         temp_alarm_include_ui_notify:
-          name: UI-Benachrichtigung (Optional)
+          name: Use The Easy Notify - UI Notification Options (Optional)
           description: >
-            Benachrichtigung in der Home Assistant Oberflaeche anzeigen.
+            Enabling this option will display notifications directly within the Home Assistant user interface (UI).
           default: disabled
           selector:
             select:
               options:
-                - label: Aktivieren
+                - label: Enable UI Notification
                   value: "enabled"
-                - label: Deaktivieren
+                - label: Disable UI Notification
                   value: "disabled"
         temp_alarm_ui_notify_title:
-          name: UI Titel
+          name: Title
           description: >
-            Titel der UI-Benachrichtigung.
-          default: Temperaturalarm!
+            Enter in the notification title of your message.
+          default: Temperature Alert!
           selector:
             text:
         temp_alarm_ui_notify_message:
-          name: UI Nachricht
+          name: Message
           description: >
-            Nachricht der UI-Benachrichtigung. Gleiche Variablen wie bei Geraete-Benachrichtigung verfuegbar.
-          default: "{{trigger_sensor_name}}: {{trigger_value}} °C liegt ausserhalb des Normbereichs ({{temp_min}} - {{temp_max}} °C)"
+            Enter in the notification message. The same variables as in the device notification are available.
+          default: "Temperature Alert! {{trigger_sensor_name}}: {{trigger_value}} °C is outside the normal range ({{temp_min}} - {{temp_max}} °C)"
           selector:
             text:
               multiline: true
         temp_alarm_ui_notify_id:
-          name: UI Notification ID
+          name: Notification ID
           description: >
-            Eine ID haelt Benachrichtigungen organisiert. Leer lassen fuer separate Benachrichtigungen.
+            You can use a notification ID to keep your notifications organized.
+            When a new notification with the same notification ID is sent, it replaces the old one, so you won't get cluttered with duplicates.
+
+
+            If this input is left blank, no notification ID will be applied and each notification will be treated as separate.
           default: []
           selector:
             text:
         # -- Dashboard Notification --
         temp_alarm_include_dashboard_notify:
-          name: Dashboard-Benachrichtigung (Optional)
+          name: Use The Easy Notify - Dashboard Notification Option (Optional)
           description: >
-            Alarm-Status auf einem Dashboard anzeigen via Text Helper.
+            Display the alarm status on a dashboard via a text helper so everyone can easily see the latest updates at a glance.
           default: disabled
           selector:
             select:
               options:
-                - label: Aktivieren
+                - label: Enable Dashboard Notification
                   value: "enabled"
-                - label: Deaktivieren
+                - label: Disable Dashboard Notification
                   value: "disabled"
         temp_alarm_dashboard_text_helper:
-          name: Dashboard Text Helper
+          name: "Dashboard Notification - Text Helper"
           description: >
-            Waehle den Text Helper fuer die Dashboard-Anzeige.
+            Select the **Text Helper** that will store the notification message, which can then be shown on a dashboard.
           default: []
           selector:
             entity:
@@ -364,105 +381,112 @@ blueprint:
                 domain: input_text
         # -- To-Do Integration --
         temp_alarm_include_todo:
-          name: To-Do Liste (Optional)
+          name: Easy Notify - To-Do List (Optional)
           description: >
-            Alarm direkt in eine To-Do Liste eintragen.
+            Enabling this option will add the alarm directly to a To-Do list.
           default: disabled
           selector:
             select:
               options:
-                - label: Aktivieren
+                - label: Enable To-Do List
                   value: "enabled"
-                - label: Deaktivieren
+                - label: Disable To-Do List
                   value: "disabled"
         temp_alarm_todo_list:
-          name: To-Do Liste
+          name: Easy Notify Action Buttons - To-Do List Selection
           description: >
-            Waehle die To-Do Liste. Die Standard-Einkaufsliste ist nicht kompatibel.
+            Choose the To-Do list where you'd like to add your task.
+
+
+            ***Note** - The default Shopping List is not compatible because it doesn't support task descriptions.*
+            All other To-Do lists are fully supported.
           default: []
           selector:
             entity:
               filter:
                 domain: todo
         temp_alarm_todo_title:
-          name: To-Do Aufgabentitel
+          name: Easy Notify Action Buttons - Task Title
           description: >
-            Titel der To-Do Aufgabe.
-          default: "Temperaturalarm pruefen"
+            When the alarm is triggered, a new task will be added to your selected To-Do list.
+            Enter the title you'd like to use for the To-Do task.
+          default: "Check temperature alarm"
           selector:
             text:
         # -- Action Buttons --
         temp_alarm_notify_action_buttons:
-          name: Action Buttons (Optional)
+          name: Easy Notify - Action Buttons (Optional)
           description: >
-            Interaktive Buttons in der Push-Benachrichtigung zum Hinzufuegen in eine To-Do Liste.
+            Add interactive buttons to your **device notifications**, allowing you to send items from a temperature alert directly to one of your To-Do lists.
 
 
-            ***Hinweis** - Fuer **Clear on Action** muss ein Notification Tag gesetzt sein.*
+            ***Note** - If you select **Add To-Do List Action Buttons + Clear on Action**, make sure to set the **Device Notification Tag** in the notification options above for this option to work properly.*
           default: disabled
           selector:
             select:
               options:
-                - label: To-Do Action Buttons
+                - label: Add To-Do List Action Buttons
                   value: "enable_todo_button"
-                - label: To-Do Action Buttons + Bestaetigung
+                - label: Add To-Do List Action Buttons + Confirmation Message
                   value: "enable_todo_button_confirmation"
-                - label: To-Do Action Buttons + Bei Aktion loeschen
+                - label: Add To-Do List Action Buttons + Clear on Action
                   value: "enable_todo_button_clear"
-                - label: Deaktivieren
+                - label: Disable Action Buttons
                   value: "disabled"
         temp_alarm_action_button_todo:
-          name: Action Button Label
+          name: Easy Notify Action Buttons - Action Button
           description: >
-            Beschriftung des Action Buttons.
-          default: "Zur To-Do Liste!"
+            Specify the label for the action button that will appear in your notification.
+            When pressed, this button will add a task to your selected To-Do list.
+          default: "Add To To-Do List!"
           selector:
             text:
         temp_alarm_action_button_cancel:
-          name: Cancel Button Label
+          name: Easy Notify Action Buttons - Cancel Button
           description: >
-            Beschriftung des Abbrechen-Buttons.
-          default: "Abbrechen"
+            Specify the label for the cancel button that will appear in your notification.
+            When pressed, this button cancels the task addition process.
+          default: "Cancel"
           selector:
             text:
         temp_alarm_action_button_confirmation_title:
-          name: Bestaetigungs-Titel
+          name: Easy Notify Action Buttons - Action & Cancel Button Confirmation Title
           description: >
-            Titel der Bestaetigungsbenachrichtigung.
-          default: "Temperaturalarm - Bestaetigung"
+            Enter the title for the confirmation notification shown when either the action or cancel button is pressed.
+          default: "Temperature Alarm - Confirmation"
           selector:
             text:
         temp_alarm_action_button_confirmation_message:
-          name: Bestaetigungs-Nachricht (Action)
+          name: Easy Notify Action Buttons - Action Button Confirmation Message
           description: >
-            Nachricht bei Druecken des Action Buttons.
-          default: "Temperaturalarm wurde zur To-Do Liste hinzugefuegt"
+            Enter the message for the confirmation notification shown when the action button is pressed.
+          default: "Temperature alarm has been added to your To-Do list"
           selector:
             text:
         temp_alarm_cancel_button_confirmation_message:
-          name: Bestaetigungs-Nachricht (Abbrechen)
+          name: Easy Notify Action Buttons - Cancel Button Confirmation Message
           description: >
-            Nachricht bei Druecken des Abbrechen-Buttons.
-          default: "Abgebrochen - nichts wurde hinzugefuegt"
+            Enter the message for the confirmation notification shown when the cancel button is pressed.
+          default: "Cancelled - Nothing was added to your To-Do list"
           selector:
             text:
         # -- Custom Actions --
         temp_alarm_include_custom_actions:
-          name: Custom Actions (Optional)
+          name: Use The Custom Action Options (Optional)
           description: >
-            Eigene Aktionen ausfuehren bei Temperaturalarm.
+            You can add any custom actions you'd like to run when a temperature alarm is triggered.
           default: disabled
           selector:
             select:
               options:
-                - label: Aktivieren
+                - label: Enable Custom Actions
                   value: "enabled"
-                - label: Deaktivieren
+                - label: Disable Custom Actions
                   value: "disabled"
         temp_alarm_custom_actions:
           name: Custom Actions
           description: >
-            Eigene Aktionen. Verfuegbare Variablen:
+            Add your own custom actions to run when a temperature alarm is triggered. Available variables:
 
             `{{trigger_sensor_name}}`, `{{trigger_value}}`, `{{trigger_entity}}`,
             `{{temp_min}}`, `{{temp_max}}`, `{{all_temp_alarm_sensors}}`
@@ -471,31 +495,31 @@ blueprint:
             action:
 
     # ============================================================
-    # TEMPERATUR-ENTWARNUNG BENACHRICHTIGUNGEN
+    # TEMPERATURE ALL-CLEAR NOTIFICATIONS
     # ============================================================
     temp_clear_notify:
-      name: "Temperatur-Entwarnung - Benachrichtigungen"
+      name: "Temperature All-Clear - Notifications"
       icon: mdi:thermometer-check
       description: >
-        Aktionen die ausgefuehrt werden, wenn alle Temperatursensoren wieder im Normbereich sind.
+        Actions to execute when all temperature sensors are back within the normal range.
       collapsed: true
       input:
         temp_clear_include_device_notify:
-          name: Geraete-Benachrichtigung (Optional)
+          name: Use The Easy Notify - Device Notification Options (Optional)
           description: >
-            Push-Benachrichtigung an mobile Geraete senden.
+            Enabling this option will send push notifications to the selected devices below when all temperature sensors return to normal.
           default: disabled
           selector:
             select:
               options:
-                - label: Aktivieren
+                - label: Enable Device Notification
                   value: "enabled"
-                - label: Deaktivieren
+                - label: Disable Device Notification
                   value: "disabled"
         temp_clear_notify_device:
-          name: Geraete
+          name: Devices Notified (Optional)
           description: >
-            Waehle die Geraete, die benachrichtigt werden sollen.
+            If you've enabled device notifications above, please select the devices to receive the notifications.
           default: []
           selector:
             device:
@@ -503,55 +527,73 @@ blueprint:
                 - integration: mobile_app
               multiple: true
         temp_clear_notify_title:
-          name: Titel
+          name: Title
           description: >
-            Titel der Entwarnungs-Benachrichtigung.
-          default: "Temperatur-Entwarnung"
+            Enter in the notification title of your message.
+          default: "Temperature All-Clear"
           selector:
             text:
         temp_clear_notify_message:
-          name: Nachricht
+          name: Message
           description: >
-            Nachricht der Entwarnungs-Benachrichtigung.
-          default: "Alle Temperatursensoren sind wieder im Normalbereich ({{temp_min}} - {{temp_max}} °C)"
+            Enter in the notification message for the all-clear notification.
+          default: "All temperature sensors are back within normal range ({{temp_min}} - {{temp_max}} °C)"
           selector:
             text:
               multiline: true
         temp_clear_notify_tag:
-          name: Notification Tag
+          name: Device Notification Tag
           description: >
-            Ein Tag haelt Benachrichtigungen organisiert.
+            You can use a tag to keep your notifications organized.
+            When a new notification with the same tag is sent, it replaces the old one, so you won't get cluttered with duplicates.
+
+
+            If this input is left blank, no tag will be applied and each notification will be treated as separate.
           default: []
           selector:
             text:
         temp_clear_notify_interruption_level:
-          name: Interruption Level - iOS
+          name: Interruption Level - iOS Only
           description: >
-            Unterbrechungsstufe fuer iOS 15+.
+            On devices running iOS 15 and later, you can configure the interruption level for your notifications to ensure they are delivered according to your preferences.
+            Choose the desired interruption level from the dropdown list.
           default: active
           selector:
             select:
               mode: dropdown
               options:
-                - label: Standard
+                - label: Default
                   value: "active"
-                - label: Kritisch
+                - label: Critical Notifications
                   value: "critical"
-                - label: Zeitkritisch
+                - label: Time Sensitive Notifications
                   value: "time-sensitive"
-                - label: Leise (ohne Bildschirm zu wecken)
+                - label: Quiet Notifications Without Waking Screen
                   value: "passive"
         temp_clear_notify_sound:
-          name: Benachrichtigungston - iOS
+          name: Notification Sound - iOS Only
           description: >
-            Dateiname des Benachrichtigungstons inkl. Dateiendung.
+            Enter the filename of the notification sound, including the file extension.
           default: []
           selector:
             text:
         temp_clear_notify_data:
-          name: Android Optionen (Optional)
+          name: Android Only Options (Optional)
           description: >
-            Android-spezifische Benachrichtigungsoptionen.
+            **High Priority** notifications ensure that you receive important alerts immediately.
+            These notifications bypass normal delivery delays and are delivered instantly to your device.
+
+
+            **Sticky Notification** ensures that important alerts are not dismissed when selected. They remain on your notification screen until you actively clear or swipe them away.
+
+
+            **Notification Channel** allows you to easily organize different notification settings,
+            including notification sounds, vibrations, and other device-specific features.
+            If you choose this option, please enter your desired channel name below.
+
+
+            **Icon** allows you to replace the default Home Assistant icon with one of your choice.
+            If selected, choose your preferred icon using the **Icon - Android Only** option below, and set the icon colour using **Icon Colour - Android Only**.
           default: []
           selector:
             select:
@@ -566,78 +608,84 @@ blueprint:
                 - label: Icon
                   value: "icon"
         temp_clear_notify_channel:
-          name: Notification Channel - Android
+          name: Notification Channel - Android Only
           description: >
-            Name des Benachrichtigungskanals.
+            If you have chosen to use a notification channel, simply enter the name of an existing channel or create a new one by entering a name here.
           default: []
           selector:
             text:
         temp_clear_notify_icon:
-          name: Icon - Android
+          name: Icon - Android Only
           description: >
-            Eigenes Icon fuer die Benachrichtigung.
+            Select a custom icon to replace the default Home Assistant icon in the notification.
+            This setting applies only if the **Icon** option is selected in **Android Only Options** above.
           default: "mdi:thermometer-check"
           selector:
             icon:
         temp_clear_notify_icon_colour:
-          name: Icon Farbe - Android
+          name: Icon Colour - Android Only
           description: >
-            Farbe des Benachrichtigungsicons.
+            Choose a colour for your custom notification icon.
+            This setting applies only if the **Icon** option is selected in **Android Only Options** above.
           default: [76, 175, 80]
           selector:
             color_rgb:
         # -- UI Notification --
         temp_clear_include_ui_notify:
-          name: UI-Benachrichtigung (Optional)
+          name: Use The Easy Notify - UI Notification Options (Optional)
           description: >
-            Entwarnungs-Benachrichtigung in der Home Assistant Oberflaeche anzeigen.
+            Enabling this option will display an all-clear notification directly within the Home Assistant user interface (UI).
           default: disabled
           selector:
             select:
               options:
-                - label: Aktivieren
+                - label: Enable UI Notification
                   value: "enabled"
-                - label: Deaktivieren
+                - label: Disable UI Notification
                   value: "disabled"
         temp_clear_ui_notify_title:
-          name: UI Titel
+          name: Title
           description: >
-            Titel der UI-Benachrichtigung.
-          default: "Temperatur-Entwarnung"
+            Enter in the notification title of your message.
+          default: "Temperature All-Clear"
           selector:
             text:
         temp_clear_ui_notify_message:
-          name: UI Nachricht
+          name: Message
           description: >
-            Nachricht der UI-Benachrichtigung.
-          default: "Alle Temperatursensoren sind wieder im Normalbereich ({{temp_min}} - {{temp_max}} °C)"
+            Enter in the notification message for the all-clear notification.
+          default: "All temperature sensors are back within normal range ({{temp_min}} - {{temp_max}} °C)"
           selector:
             text:
               multiline: true
         temp_clear_ui_notify_id:
-          name: UI Notification ID
+          name: Notification ID
           description: >
-            Eine ID haelt Benachrichtigungen organisiert.
+            You can use a notification ID to keep your notifications organized.
+            When a new notification with the same notification ID is sent, it replaces the old one, so you won't get cluttered with duplicates.
+
+
+            If this input is left blank, no notification ID will be applied and each notification will be treated as separate.
           default: []
           selector:
             text:
         # -- Dashboard Notification --
         temp_clear_include_dashboard_notify:
-          name: Dashboard-Benachrichtigung (Optional)
+          name: Use The Easy Notify - Dashboard Notification Option (Optional)
           description: >
-            Entwarnungs-Status auf einem Dashboard anzeigen.
+            Display the all-clear status on a dashboard via a text helper.
           default: disabled
           selector:
             select:
               options:
-                - label: Aktivieren
+                - label: Enable Dashboard Notification
                   value: "enabled"
-                - label: Deaktivieren
+                - label: Disable Dashboard Notification
                   value: "disabled"
         temp_clear_dashboard_text_helper:
-          name: Dashboard Text Helper
+          name: "Dashboard Notification - Text Helper"
           description: >
-            Waehle den Text Helper fuer die Dashboard-Anzeige.
+            Select the **Text Helper** that will store the notification message, which can then be shown on a dashboard.
           default: []
           selector:
             entity:
@@ -645,52 +693,52 @@ blueprint:
                 domain: input_text
         # -- Custom Actions --
         temp_clear_include_custom_actions:
-          name: Custom Actions (Optional)
+          name: Use The Custom Action Options (Optional)
           description: >
-            Eigene Aktionen ausfuehren bei Temperatur-Entwarnung.
+            You can add any custom actions you'd like to run when the temperature all-clear is triggered.
           default: disabled
           selector:
             select:
               options:
-                - label: Aktivieren
+                - label: Enable Custom Actions
                   value: "enabled"
-                - label: Deaktivieren
+                - label: Disable Custom Actions
                   value: "disabled"
         temp_clear_custom_actions:
           name: Custom Actions
           description: >
-            Eigene Aktionen bei Entwarnung.
+            Add your own custom actions to run when the temperature all-clear is triggered.
           default: []
           selector:
             action:
 
     # ============================================================
-    # FEUCHTIGKEITS-ALARM BENACHRICHTIGUNGEN
+    # HUMIDITY ALARM NOTIFICATIONS
     # ============================================================
     hum_alarm_notify:
-      name: "Feuchtigkeits-Alarm - Benachrichtigungen"
+      name: "Humidity Alarm - Notifications & Actions"
       icon: mdi:water-alert
       description: >
-        Aktionen die ausgefuehrt werden, wenn ein Feuchtigkeitssensor den Normbereich verlaesst.
-        Werden unterdrueckt solange ein Temperaturalarm aktiv ist.
+        Actions to execute when a humidity sensor leaves the normal range.
+        These actions are suppressed while a temperature alarm is active.
       collapsed: true
       input:
         hum_alarm_include_device_notify:
-          name: Geraete-Benachrichtigung (Optional)
+          name: Use The Easy Notify - Device Notification Options (Optional)
           description: >
-            Push-Benachrichtigung an mobile Geraete senden.
+            Enabling this option will send push notifications to the selected devices below when a humidity alarm is triggered.
           default: disabled
           selector:
             select:
               options:
-                - label: Aktivieren
+                - label: Enable Device Notification
                   value: "enabled"
-                - label: Deaktivieren
+                - label: Disable Device Notification
                   value: "disabled"
         hum_alarm_notify_device:
-          name: Geraete
+          name: Devices Notified (Optional)
           description: >
-            Waehle die Geraete, die benachrichtigt werden sollen.
+            If you've enabled device notifications above, please select the devices to receive the notifications.
           default: []
           selector:
             device:
@@ -698,63 +746,81 @@ blueprint:
                 - integration: mobile_app
               multiple: true
         hum_alarm_notify_title:
-          name: Titel
+          name: Title
           description: >
-            Titel der Push-Benachrichtigung.
-          default: Feuchtigkeitsalarm!
+            Enter in the notification title of your message.
+          default: Humidity Alert!
           selector:
             text:
         hum_alarm_notify_message:
-          name: Nachricht
+          name: Message
           description: >
-            Nachricht der Push-Benachrichtigung. Verfuegbare Variablen:
+            Enter in the notification message. Available variables:
 
-            - `{{trigger_sensor_name}}` - Sensorname
+            - `{{trigger_sensor_name}}` - Sensor name
 
-            - `{{trigger_value}}` - Aktueller Messwert
+            - `{{trigger_value}}` - Current reading
 
-            - `{{hum_min}}` / `{{hum_max}}` - Grenzwerte
+            - `{{hum_min}}` / `{{hum_max}}` - Threshold values
 
-            - `{{all_hum_alarm_sensors}}` - Alle Sensoren im Alarm
-          default: "{{trigger_sensor_name}}: {{trigger_value}} % liegt ausserhalb des Normbereichs ({{hum_min}} - {{hum_max}} %)"
+            - `{{all_hum_alarm_sensors}}` - All sensors currently in alarm
+          default: "Humidity Alert! {{trigger_sensor_name}}: {{trigger_value}} % is outside the normal range ({{hum_min}} - {{hum_max}} %)"
           selector:
             text:
               multiline: true
         hum_alarm_notify_tag:
-          name: Notification Tag
+          name: Device Notification Tag
           description: >
-            Ein Tag haelt Benachrichtigungen organisiert.
+            You can use a tag to keep your notifications organized.
+            When a new notification with the same tag is sent, it replaces the old one, so you won't get cluttered with duplicates.
+
+
+            If this input is left blank, no tag will be applied and each notification will be treated as separate.
           default: []
           selector:
             text:
         hum_alarm_notify_interruption_level:
-          name: Interruption Level - iOS
+          name: Interruption Level - iOS Only
           description: >
-            Unterbrechungsstufe fuer iOS 15+.
+            On devices running iOS 15 and later, you can configure the interruption level for your notifications to ensure they are delivered according to your preferences.
+            Choose the desired interruption level from the dropdown list.
           default: active
           selector:
             select:
               mode: dropdown
               options:
-                - label: Standard
+                - label: Default
                   value: "active"
-                - label: Kritisch
+                - label: Critical Notifications
                   value: "critical"
-                - label: Zeitkritisch
+                - label: Time Sensitive Notifications
                   value: "time-sensitive"
-                - label: Leise (ohne Bildschirm zu wecken)
+                - label: Quiet Notifications Without Waking Screen
                   value: "passive"
         hum_alarm_notify_sound:
-          name: Benachrichtigungston - iOS
+          name: Notification Sound - iOS Only
           description: >
-            Dateiname des Benachrichtigungstons inkl. Dateiendung.
+            Enter the filename of the notification sound, including the file extension.
           default: []
           selector:
             text:
         hum_alarm_notify_data:
-          name: Android Optionen (Optional)
+          name: Android Only Options (Optional)
           description: >
-            Android-spezifische Benachrichtigungsoptionen.
+            **High Priority** notifications ensure that you receive important alerts immediately.
+            These notifications bypass normal delivery delays and are delivered instantly to your device.
+
+
+            **Sticky Notification** ensures that important alerts are not dismissed when selected. They remain on your notification screen until you actively clear or swipe them away.
+
+
+            **Notification Channel** allows you to easily organize different notification settings,
+            including notification sounds, vibrations, and other device-specific features.
+            If you choose this option, please enter your desired channel name below.
+
+
+            **Icon** allows you to replace the default Home Assistant icon with one of your choice.
+            If selected, choose your preferred icon using the **Icon - Android Only** option below, and set the icon colour using **Icon Colour - Android Only**.
           default: []
           selector:
             select:
@@ -769,78 +835,84 @@ blueprint:
                 - label: Icon
                   value: "icon"
         hum_alarm_notify_channel:
-          name: Notification Channel - Android
+          name: Notification Channel - Android Only
           description: >
-            Name des Benachrichtigungskanals.
+            If you have chosen to use a notification channel, simply enter the name of an existing channel or create a new one by entering a name here.
           default: []
           selector:
             text:
         hum_alarm_notify_icon:
-          name: Icon - Android
+          name: Icon - Android Only
           description: >
-            Eigenes Icon fuer die Benachrichtigung.
+            Select a custom icon to replace the default Home Assistant icon in the notification.
+            This setting applies only if the **Icon** option is selected in **Android Only Options** above.
           default: "mdi:water-alert"
           selector:
             icon:
         hum_alarm_notify_icon_colour:
-          name: Icon Farbe - Android
+          name: Icon Colour - Android Only
           description: >
-            Farbe des Benachrichtigungsicons.
+            Choose a colour for your custom notification icon.
+            This setting applies only if the **Icon** option is selected in **Android Only Options** above.
           default: [33, 150, 243]
           selector:
             color_rgb:
         # -- UI Notification --
         hum_alarm_include_ui_notify:
-          name: UI-Benachrichtigung (Optional)
+          name: Use The Easy Notify - UI Notification Options (Optional)
           description: >
-            Benachrichtigung in der Home Assistant Oberflaeche anzeigen.
+            Enabling this option will display notifications directly within the Home Assistant user interface (UI).
           default: disabled
           selector:
             select:
               options:
-                - label: Aktivieren
+                - label: Enable UI Notification
                   value: "enabled"
-                - label: Deaktivieren
+                - label: Disable UI Notification
                   value: "disabled"
         hum_alarm_ui_notify_title:
-          name: UI Titel
+          name: Title
           description: >
-            Titel der UI-Benachrichtigung.
-          default: Feuchtigkeitsalarm!
+            Enter in the notification title of your message.
+          default: Humidity Alert!
           selector:
             text:
         hum_alarm_ui_notify_message:
-          name: UI Nachricht
+          name: Message
           description: >
-            Nachricht der UI-Benachrichtigung.
-          default: "{{trigger_sensor_name}}: {{trigger_value}} % liegt ausserhalb des Normbereichs ({{hum_min}} - {{hum_max}} %)"
+            Enter in the notification message. The same variables as in the device notification are available.
+          default: "Humidity Alert! {{trigger_sensor_name}}: {{trigger_value}} % is outside the normal range ({{hum_min}} - {{hum_max}} %)"
           selector:
             text:
               multiline: true
         hum_alarm_ui_notify_id:
-          name: UI Notification ID
+          name: Notification ID
           description: >
-            Eine ID haelt Benachrichtigungen organisiert.
+            You can use a notification ID to keep your notifications organized.
+            When a new notification with the same notification ID is sent, it replaces the old one, so you won't get cluttered with duplicates.
+
+
+            If this input is left blank, no notification ID will be applied and each notification will be treated as separate.
           default: []
           selector:
             text:
         # -- Dashboard Notification --
         hum_alarm_include_dashboard_notify:
-          name: Dashboard-Benachrichtigung (Optional)
+          name: Use The Easy Notify - Dashboard Notification Option (Optional)
           description: >
-            Alarm-Status auf einem Dashboard anzeigen via Text Helper.
+            Display the alarm status on a dashboard via a text helper so everyone can easily see the latest updates at a glance.
           default: disabled
           selector:
             select:
               options:
-                - label: Aktivieren
+                - label: Enable Dashboard Notification
                   value: "enabled"
-                - label: Deaktivieren
+                - label: Disable Dashboard Notification
                   value: "disabled"
         hum_alarm_dashboard_text_helper:
-          name: Dashboard Text Helper
+          name: "Dashboard Notification - Text Helper"
           description: >
-            Waehle den Text Helper fuer die Dashboard-Anzeige.
+            Select the **Text Helper** that will store the notification message, which can then be shown on a dashboard.
           default: []
           selector:
             entity:
@@ -848,102 +920,112 @@ blueprint:
                 domain: input_text
         # -- To-Do Integration --
         hum_alarm_include_todo:
-          name: To-Do Liste (Optional)
+          name: Easy Notify - To-Do List (Optional)
           description: >
-            Alarm direkt in eine To-Do Liste eintragen.
+            Enabling this option will add the alarm directly to a To-Do list.
           default: disabled
           selector:
             select:
               options:
-                - label: Aktivieren
+                - label: Enable To-Do List
                   value: "enabled"
-                - label: Deaktivieren
+                - label: Disable To-Do List
                   value: "disabled"
         hum_alarm_todo_list:
-          name: To-Do Liste
+          name: Easy Notify Action Buttons - To-Do List Selection
           description: >
-            Waehle die To-Do Liste.
+            Choose the To-Do list where you'd like to add your task.
+
+
+            ***Note** - The default Shopping List is not compatible because it doesn't support task descriptions.*
+            All other To-Do lists are fully supported.
           default: []
           selector:
             entity:
               filter:
                 domain: todo
         hum_alarm_todo_title:
-          name: To-Do Aufgabentitel
+          name: Easy Notify Action Buttons - Task Title
           description: >
-            Titel der To-Do Aufgabe.
-          default: "Feuchtigkeitsalarm pruefen"
+            When the alarm is triggered, a new task will be added to your selected To-Do list.
+            Enter the title you'd like to use for the To-Do task.
+          default: "Check humidity alarm"
           selector:
             text:
         # -- Action Buttons --
         hum_alarm_notify_action_buttons:
-          name: Action Buttons (Optional)
+          name: Easy Notify - Action Buttons (Optional)
           description: >
-            Interaktive Buttons in der Push-Benachrichtigung.
+            Add interactive buttons to your **device notifications**, allowing you to send items from a humidity alert directly to one of your To-Do lists.
+
+
+            ***Note** - If you select **Add To-Do List Action Buttons + Clear on Action**, make sure to set the **Device Notification Tag** in the notification options above for this option to work properly.*
           default: disabled
           selector:
             select:
               options:
-                - label: To-Do Action Buttons
+                - label: Add To-Do List Action Buttons
                   value: "enable_todo_button"
-                - label: To-Do Action Buttons + Bestaetigung
+                - label: Add To-Do List Action Buttons + Confirmation Message
                   value: "enable_todo_button_confirmation"
-                - label: To-Do Action Buttons + Bei Aktion loeschen
+                - label: Add To-Do List Action Buttons + Clear on Action
                   value: "enable_todo_button_clear"
-                - label: Deaktivieren
+                - label: Disable Action Buttons
                   value: "disabled"
         hum_alarm_action_button_todo:
-          name: Action Button Label
+          name: Easy Notify Action Buttons - Action Button
           description: >
-            Beschriftung des Action Buttons.
-          default: "Zur To-Do Liste!"
+            Specify the label for the action button that will appear in your notification.
+            When pressed, this button will add a task to your selected To-Do list.
+          default: "Add To To-Do List!"
           selector:
             text:
         hum_alarm_action_button_cancel:
-          name: Cancel Button Label
+          name: Easy Notify Action Buttons - Cancel Button
           description: >
-            Beschriftung des Abbrechen-Buttons.
-          default: "Abbrechen"
+            Specify the label for the cancel button that will appear in your notification.
+            When pressed, this button cancels the task addition process.
+          default: "Cancel"
           selector:
             text:
         hum_alarm_action_button_confirmation_title:
-          name: Bestaetigungs-Titel
+          name: Easy Notify Action Buttons - Action & Cancel Button Confirmation Title
           description: >
-            Titel der Bestaetigungsbenachrichtigung.
-          default: "Feuchtigkeitsalarm - Bestaetigung"
+            Enter the title for the confirmation notification shown when either the action or cancel button is pressed.
+          default: "Humidity Alarm - Confirmation"
           selector:
             text:
         hum_alarm_action_button_confirmation_message:
-          name: Bestaetigungs-Nachricht (Action)
+          name: Easy Notify Action Buttons - Action Button Confirmation Message
           description: >
-            Nachricht bei Druecken des Action Buttons.
-          default: "Feuchtigkeitsalarm wurde zur To-Do Liste hinzugefuegt"
+            Enter the message for the confirmation notification shown when the action button is pressed.
+          default: "Humidity alarm has been added to your To-Do list"
           selector:
             text:
         hum_alarm_cancel_button_confirmation_message:
-          name: Bestaetigungs-Nachricht (Abbrechen)
+          name: Easy Notify Action Buttons - Cancel Button Confirmation Message
           description: >
-            Nachricht bei Druecken des Abbrechen-Buttons.
-          default: "Abgebrochen - nichts wurde hinzugefuegt"
+            Enter the message for the confirmation notification shown when the cancel button is pressed.
+          default: "Cancelled - Nothing was added to your To-Do list"
           selector:
             text:
         # -- Custom Actions --
         hum_alarm_include_custom_actions:
-          name: Custom Actions (Optional)
+          name: Use The Custom Action Options (Optional)
           description: >
-            Eigene Aktionen ausfuehren bei Feuchtigkeitsalarm.
+            You can add any custom actions you'd like to run when a humidity alarm is triggered.
           default: disabled
           selector:
             select:
               options:
-                - label: Aktivieren
+                - label: Enable Custom Actions
                   value: "enabled"
-                - label: Deaktivieren
+                - label: Disable Custom Actions
                   value: "disabled"
         hum_alarm_custom_actions:
           name: Custom Actions
           description: >
-            Eigene Aktionen. Verfuegbare Variablen:
+            Add your own custom actions to run when a humidity alarm is triggered. Available variables:
 
             `{{trigger_sensor_name}}`, `{{trigger_value}}`, `{{trigger_entity}}`,
             `{{hum_min}}`, `{{hum_max}}`, `{{all_hum_alarm_sensors}}`
@@ -952,31 +1034,31 @@ blueprint:
             action:
 
     # ============================================================
-    # FEUCHTIGKEITS-ENTWARNUNG BENACHRICHTIGUNGEN
+    # HUMIDITY ALL-CLEAR NOTIFICATIONS
     # ============================================================
     hum_clear_notify:
-      name: "Feuchtigkeits-Entwarnung - Benachrichtigungen"
+      name: "Humidity All-Clear - Notifications"
       icon: mdi:water-check
       description: >
-        Aktionen die ausgefuehrt werden, wenn alle Feuchtigkeitssensoren wieder im Normbereich sind.
+        Actions to execute when all humidity sensors are back within the normal range.
       collapsed: true
       input:
         hum_clear_include_device_notify:
-          name: Geraete-Benachrichtigung (Optional)
+          name: Use The Easy Notify - Device Notification Options (Optional)
           description: >
-            Push-Benachrichtigung an mobile Geraete senden.
+            Enabling this option will send push notifications to the selected devices below when all humidity sensors return to normal.
           default: disabled
           selector:
             select:
               options:
-                - label: Aktivieren
+                - label: Enable Device Notification
                   value: "enabled"
-                - label: Deaktivieren
+                - label: Disable Device Notification
                   value: "disabled"
         hum_clear_notify_device:
-          name: Geraete
+          name: Devices Notified (Optional)
           description: >
-            Waehle die Geraete, die benachrichtigt werden sollen.
+            If you've enabled device notifications above, please select the devices to receive the notifications.
           default: []
           selector:
             device:
@@ -984,55 +1066,73 @@ blueprint:
                 - integration: mobile_app
               multiple: true
         hum_clear_notify_title:
-          name: Titel
+          name: Title
           description: >
-            Titel der Entwarnungs-Benachrichtigung.
-          default: "Feuchtigkeits-Entwarnung"
+            Enter in the notification title of your message.
+          default: "Humidity All-Clear"
           selector:
             text:
         hum_clear_notify_message:
-          name: Nachricht
+          name: Message
           description: >
-            Nachricht der Entwarnungs-Benachrichtigung.
-          default: "Alle Feuchtigkeitssensoren sind wieder im Normalbereich ({{hum_min}} - {{hum_max}} %)"
+            Enter in the notification message for the all-clear notification.
+          default: "All humidity sensors are back within normal range ({{hum_min}} - {{hum_max}} %)"
           selector:
             text:
               multiline: true
         hum_clear_notify_tag:
-          name: Notification Tag
+          name: Device Notification Tag
           description: >
-            Ein Tag haelt Benachrichtigungen organisiert.
+            You can use a tag to keep your notifications organized.
+            When a new notification with the same tag is sent, it replaces the old one, so you won't get cluttered with duplicates.
+
+
+            If this input is left blank, no tag will be applied and each notification will be treated as separate.
           default: []
           selector:
             text:
         hum_clear_notify_interruption_level:
-          name: Interruption Level - iOS
+          name: Interruption Level - iOS Only
           description: >
-            Unterbrechungsstufe fuer iOS 15+.
+            On devices running iOS 15 and later, you can configure the interruption level for your notifications to ensure they are delivered according to your preferences.
+            Choose the desired interruption level from the dropdown list.
           default: active
           selector:
             select:
               mode: dropdown
               options:
-                - label: Standard
+                - label: Default
                   value: "active"
-                - label: Kritisch
+                - label: Critical Notifications
                   value: "critical"
-                - label: Zeitkritisch
+                - label: Time Sensitive Notifications
                   value: "time-sensitive"
-                - label: Leise (ohne Bildschirm zu wecken)
+                - label: Quiet Notifications Without Waking Screen
                   value: "passive"
         hum_clear_notify_sound:
-          name: Benachrichtigungston - iOS
+          name: Notification Sound - iOS Only
           description: >
-            Dateiname des Benachrichtigungstons inkl. Dateiendung.
+            Enter the filename of the notification sound, including the file extension.
           default: []
           selector:
             text:
         hum_clear_notify_data:
-          name: Android Optionen (Optional)
+          name: Android Only Options (Optional)
           description: >
-            Android-spezifische Benachrichtigungsoptionen.
+            **High Priority** notifications ensure that you receive important alerts immediately.
+            These notifications bypass normal delivery delays and are delivered instantly to your device.
+
+
+            **Sticky Notification** ensures that important alerts are not dismissed when selected. They remain on your notification screen until you actively clear or swipe them away.
+
+
+            **Notification Channel** allows you to easily organize different notification settings,
+            including notification sounds, vibrations, and other device-specific features.
+            If you choose this option, please enter your desired channel name below.
+
+
+            **Icon** allows you to replace the default Home Assistant icon with one of your choice.
+            If selected, choose your preferred icon using the **Icon - Android Only** option below, and set the icon colour using **Icon Colour - Android Only**.
           default: []
           selector:
             select:
@@ -1047,78 +1147,84 @@ blueprint:
                 - label: Icon
                   value: "icon"
         hum_clear_notify_channel:
-          name: Notification Channel - Android
+          name: Notification Channel - Android Only
           description: >
-            Name des Benachrichtigungskanals.
+            If you have chosen to use a notification channel, simply enter the name of an existing channel or create a new one by entering a name here.
           default: []
           selector:
             text:
         hum_clear_notify_icon:
-          name: Icon - Android
+          name: Icon - Android Only
           description: >
-            Eigenes Icon fuer die Benachrichtigung.
+            Select a custom icon to replace the default Home Assistant icon in the notification.
+            This setting applies only if the **Icon** option is selected in **Android Only Options** above.
           default: "mdi:water-check"
           selector:
             icon:
         hum_clear_notify_icon_colour:
-          name: Icon Farbe - Android
+          name: Icon Colour - Android Only
           description: >
-            Farbe des Benachrichtigungsicons.
+            Choose a colour for your custom notification icon.
+            This setting applies only if the **Icon** option is selected in **Android Only Options** above.
           default: [76, 175, 80]
           selector:
             color_rgb:
         # -- UI Notification --
         hum_clear_include_ui_notify:
-          name: UI-Benachrichtigung (Optional)
+          name: Use The Easy Notify - UI Notification Options (Optional)
           description: >
-            Entwarnungs-Benachrichtigung in der Home Assistant Oberflaeche anzeigen.
+            Enabling this option will display an all-clear notification directly within the Home Assistant user interface (UI).
           default: disabled
           selector:
             select:
               options:
-                - label: Aktivieren
+                - label: Enable UI Notification
                   value: "enabled"
-                - label: Deaktivieren
+                - label: Disable UI Notification
                   value: "disabled"
         hum_clear_ui_notify_title:
-          name: UI Titel
+          name: Title
           description: >
-            Titel der UI-Benachrichtigung.
-          default: "Feuchtigkeits-Entwarnung"
+            Enter in the notification title of your message.
+          default: "Humidity All-Clear"
           selector:
             text:
         hum_clear_ui_notify_message:
-          name: UI Nachricht
+          name: Message
           description: >
-            Nachricht der UI-Benachrichtigung.
-          default: "Alle Feuchtigkeitssensoren sind wieder im Normalbereich ({{hum_min}} - {{hum_max}} %)"
+            Enter in the notification message for the all-clear notification.
+          default: "All humidity sensors are back within normal range ({{hum_min}} - {{hum_max}} %)"
           selector:
             text:
               multiline: true
         hum_clear_ui_notify_id:
-          name: UI Notification ID
+          name: Notification ID
           description: >
-            Eine ID haelt Benachrichtigungen organisiert.
+            You can use a notification ID to keep your notifications organized.
+            When a new notification with the same notification ID is sent, it replaces the old one, so you won't get cluttered with duplicates.
+
+
+            If this input is left blank, no notification ID will be applied and each notification will be treated as separate.
           default: []
           selector:
             text:
         # -- Dashboard Notification --
         hum_clear_include_dashboard_notify:
-          name: Dashboard-Benachrichtigung (Optional)
+          name: Use The Easy Notify - Dashboard Notification Option (Optional)
           description: >
-            Entwarnungs-Status auf einem Dashboard anzeigen.
+            Display the all-clear status on a dashboard via a text helper.
           default: disabled
           selector:
             select:
               options:
-                - label: Aktivieren
+                - label: Enable Dashboard Notification
                   value: "enabled"
-                - label: Deaktivieren
+                - label: Disable Dashboard Notification
                   value: "disabled"
         hum_clear_dashboard_text_helper:
-          name: Dashboard Text Helper
+          name: "Dashboard Notification - Text Helper"
           description: >
-            Waehle den Text Helper fuer die Dashboard-Anzeige.
+            Select the **Text Helper** that will store the notification message, which can then be shown on a dashboard.
           default: []
           selector:
             entity:
@@ -1126,37 +1232,37 @@ blueprint:
                 domain: input_text
         # -- Custom Actions --
         hum_clear_include_custom_actions:
-          name: Custom Actions (Optional)
+          name: Use The Custom Action Options (Optional)
           description: >
-            Eigene Aktionen ausfuehren bei Feuchtigkeits-Entwarnung.
+            You can add any custom actions you'd like to run when the humidity all-clear is triggered.
           default: disabled
           selector:
             select:
               options:
-                - label: Aktivieren
+                - label: Enable Custom Actions
                   value: "enabled"
-                - label: Deaktivieren
+                - label: Disable Custom Actions
                   value: "disabled"
         hum_clear_custom_actions:
           name: Custom Actions
           description: >
-            Eigene Aktionen bei Entwarnung.
+            Add your own custom actions to run when the humidity all-clear is triggered.
           default: []
           selector:
             action:
 
     # ============================================================
-    # GLOBALE BEDINGUNGEN
+    # GLOBAL CONDITIONS
     # ============================================================
     global_conditions_settings:
-      name: "Globale Bedingungen"
+      name: "Global Conditions"
       icon: mdi:earth
       collapsed: true
       input:
         global_conditions:
-          name: Globale Bedingungen
+          name: Global Conditions
           description: >
-            Optionale Bedingungen die erfuellt sein muessen, damit die Automation ausgefuehrt wird.
+            Enter any global conditions you would like to apply to the automation.
           default: []
           selector:
             condition:
