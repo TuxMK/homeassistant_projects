@@ -9,6 +9,7 @@ Eine Sammlung von Blueprints, Konfigurationen, Skripten und anderen Ressourcen a
 | Name | Beschreibung |
 |------|--------------|
 | [Device Fault Notifications](blueprints/device_fault_notifications/) | Benachrichtigungen bei Geraetefehlern (basierend auf Binary Sensor Patterns) |
+| [Climate Alarm](blueprints/climate_alarm/) | Echtzeit-Temperatur- & Feuchtigkeitsueberwachung mit Normbereichen, Hysterese und Prioritaetslogik |
 
 ### Custom Templates
 

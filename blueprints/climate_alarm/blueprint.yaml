@@ -1,0 +1,2116 @@
+blueprint:
+  name: Climate Alarm - Temperatur & Feuchtigkeitsueberwachung
+  description: >
+    # Climate Alarm - Temperatur & Feuchtigkeitsueberwachung
+
+    **Version: 1.0**
+
+
+    Echtzeit-Ueberwachung von Temperatur- und Feuchtigkeitssensoren mit konfigurierbaren Normbereichen, Hysterese und Prioritaetslogik.
+
+
+    <details>
+    <summary><b>Funktionsweise:</b></summary>
+
+      - **Echtzeit-Trigger:**
+        - Reagiert sofort auf Zustandsaenderungen der ausgewaehlten Sensoren.
+        - Alarm wird ausgeloest, sobald ein Sensorwert den Normbereich verlaesst.
+        - Entwarnung wird gesendet, sobald alle Sensoren wieder im Normbereich sind.
+
+      - **Sensor-Auswahl:**
+        - Waehle einen oder mehrere Temperatursensoren.
+        - Waehle einen oder mehrere Feuchtigkeitssensoren.
+        - Definiere jeweils einen Normbereich (Min/Max).
+
+      - **Hysterese:**
+        - Konfigurierbarer Hysterese-Wert verhindert Alarm-Flackern an Grenzwerten.
+        - Beispiel: Alarm bei >26 Grad C, Entwarnung erst bei <25 Grad C (1 Grad Hysterese).
+
+      - **Prioritaet:**
+        - Temperaturalarme haben Vorrang vor Feuchtigkeitsalarmen.
+        - Bei gleichzeitigem Temperatur- und Feuchtigkeitsalarm werden nur Temperatur-Aktionen ausgefuehrt.
+        - Feuchtigkeitsalarme werden nachgeholt, sobald der Temperaturalarm endet.
+
+      - **Benachrichtigungsoptionen:**
+        - Getrennte Aktionen fuer Temperatur- und Feuchtigkeitsalarme.
+        - Push-Benachrichtigungen (iOS/Android).
+        - UI-Benachrichtigungen.
+        - Dashboard-Benachrichtigungen via Text Helper.
+        - To-Do Liste Integration mit Action Buttons.
+        - Custom Actions.
+
+      - **Voraussetzungen:**
+        - 2 Input Boolean Helper erstellen (Temperatur-Alarm-Status, Feuchtigkeits-Alarm-Status).
+    </details>
+
+
+    Required = *
+  domain: automation
+  input:
+    sensor_settings:
+      name: "Sensor-Einstellungen *"
+      icon: mdi:thermometer-alert
+      description: >
+        Sensoren, Normbereiche, Hysterese und Alarm-Status-Helper konfigurieren.
+      collapsed: true
+      input:
+        temperature_sensors:
+          name: Temperatursensoren (Optional)
+          description: >
+            Waehle die Temperatursensoren aus, die ueberwacht werden sollen.
+            Alle ausgewaehlten Sensoren teilen sich denselben Normbereich.
+            Fuer unterschiedliche Bereiche (z.B. Kuehlschrank vs. Wohnzimmer) erstelle separate Automationen.
+          default: []
+          selector:
+            entity:
+              filter:
+                domain: sensor
+                device_class: temperature
+              multiple: true
+        humidity_sensors:
+          name: Feuchtigkeitssensoren (Optional)
+          description: >
+            Waehle die Feuchtigkeitssensoren aus, die ueberwacht werden sollen.
+            Alle ausgewaehlten Sensoren teilen sich denselben Normbereich.
+          default: []
+          selector:
+            entity:
+              filter:
+                domain: sensor
+                device_class: humidity
+              multiple: true
+        temp_min:
+          name: "Temperatur Untergrenze *"
+          description: >
+            Minimale Temperatur in Grad Celsius. Ein Alarm wird ausgeloest, wenn ein Sensor diesen Wert unterschreitet.
+          default: 18
+          selector:
+            number:
+              min: -40
+              max: 80
+              step: 0.5
+              unit_of_measurement: "°C"
+              mode: box
+        temp_max:
+          name: "Temperatur Obergrenze *"
+          description: >
+            Maximale Temperatur in Grad Celsius. Ein Alarm wird ausgeloest, wenn ein Sensor diesen Wert ueberschreitet.
+          default: 26
+          selector:
+            number:
+              min: -40
+              max: 80
+              step: 0.5
+              unit_of_measurement: "°C"
+              mode: box
+        hum_min:
+          name: "Feuchtigkeit Untergrenze *"
+          description: >
+            Minimale relative Luftfeuchtigkeit in Prozent.
+          default: 30
+          selector:
+            number:
+              min: 0
+              max: 100
+              step: 1
+              unit_of_measurement: "%"
+              mode: box
+        hum_max:
+          name: "Feuchtigkeit Obergrenze *"
+          description: >
+            Maximale relative Luftfeuchtigkeit in Prozent.
+          default: 70
+          selector:
+            number:
+              min: 0
+              max: 100
+              step: 1
+              unit_of_measurement: "%"
+              mode: box
+        hysteresis:
+          name: Hysterese
+          description: >
+            Hysterese-Wert zur Vermeidung von Alarm-Flackern an den Grenzwerten.
+            Der Wert wird fuer die Entwarnung vom Grenzwert abgezogen (Obergrenze) bzw. addiert (Untergrenze).
+
+
+            **Beispiel:** Obergrenze 26 Grad C mit Hysterese 1 -> Alarm bei >26 Grad C, Entwarnung bei <25 Grad C.
+
+
+            Setze den Wert auf 0, um keine Hysterese zu verwenden.
+          default: 1.0
+          selector:
+            number:
+              min: 0
+              max: 10
+              step: 0.1
+              unit_of_measurement: "°C / %"
+              mode: box
+        temp_alarm_boolean:
+          name: "Temperatur-Alarm Status Helper *"
+          description: >
+            Waehle einen Input Boolean Helper, der den Temperatur-Alarm-Status speichert.
+            Erstelle diesen unter Einstellungen -> Geraete & Dienste -> Helfer -> Schalter (Input Boolean).
+
+
+            Dieser Helper wird automatisch ein-/ausgeschaltet und speichert ob ein Temperaturalarm aktiv ist.
+          default: []
+          selector:
+            entity:
+              filter:
+                domain: input_boolean
+        hum_alarm_boolean:
+          name: "Feuchtigkeits-Alarm Status Helper *"
+          description: >
+            Waehle einen Input Boolean Helper, der den Feuchtigkeits-Alarm-Status speichert.
+            Erstelle diesen unter Einstellungen -> Geraete & Dienste -> Helfer -> Schalter (Input Boolean).
+
+
+            Dieser Helper wird automatisch ein-/ausgeschaltet und speichert ob ein Feuchtigkeitsalarm aktiv ist.
+          default: []
+          selector:
+            entity:
+              filter:
+                domain: input_boolean
+
+    # ============================================================
+    # TEMPERATUR-ALARM BENACHRICHTIGUNGEN
+    # ============================================================
+    temp_alarm_notify:
+      name: "Temperatur-Alarm - Benachrichtigungen"
+      icon: mdi:thermometer-high
+      description: >
+        Aktionen die ausgefuehrt werden, wenn ein Temperatursensor den Normbereich verlaesst.
+      collapsed: true
+      input:
+        # -- Device Notification --
+        temp_alarm_include_device_notify:
+          name: Geraete-Benachrichtigung (Optional)
+          description: >
+            Push-Benachrichtigung an mobile Geraete senden.
+          default: disabled
+          selector:
+            select:
+              options:
+                - label: Aktivieren
+                  value: "enabled"
+                - label: Deaktivieren
+                  value: "disabled"
+        temp_alarm_notify_device:
+          name: Geraete
+          description: >
+            Waehle die Geraete, die benachrichtigt werden sollen.
+          default: []
+          selector:
+            device:
+              filter:
+                - integration: mobile_app
+              multiple: true
+        temp_alarm_notify_title:
+          name: Titel
+          description: >
+            Titel der Push-Benachrichtigung.
+          default: Temperaturalarm!
+          selector:
+            text:
+        temp_alarm_notify_message:
+          name: Nachricht
+          description: >
+            Nachricht der Push-Benachrichtigung. Verfuegbare Variablen:
+
+            - `{{trigger_sensor_name}}` - Sensorname
+
+            - `{{trigger_value}}` - Aktueller Messwert
+
+            - `{{temp_min}}` / `{{temp_max}}` - Grenzwerte
+
+            - `{{all_temp_alarm_sensors}}` - Alle Sensoren im Alarm
+          default: "{{trigger_sensor_name}}: {{trigger_value}} °C liegt ausserhalb des Normbereichs ({{temp_min}} - {{temp_max}} °C)"
+          selector:
+            text:
+              multiline: true
+        temp_alarm_notify_tag:
+          name: Notification Tag
+          description: >
+            Ein Tag haelt Benachrichtigungen organisiert. Eine neue Benachrichtigung mit gleichem Tag ersetzt die vorherige.
+            Leer lassen fuer separate Benachrichtigungen.
+          default: []
+          selector:
+            text:
+        temp_alarm_notify_interruption_level:
+          name: Interruption Level - iOS
+          description: >
+            Unterbrechungsstufe fuer iOS 15+.
+          default: active
+          selector:
+            select:
+              mode: dropdown
+              options:
+                - label: Standard
+                  value: "active"
+                - label: Kritisch
+                  value: "critical"
+                - label: Zeitkritisch
+                  value: "time-sensitive"
+                - label: Leise (ohne Bildschirm zu wecken)
+                  value: "passive"
+        temp_alarm_notify_sound:
+          name: Benachrichtigungston - iOS
+          description: >
+            Dateiname des Benachrichtigungstons inkl. Dateiendung.
+          default: []
+          selector:
+            text:
+        temp_alarm_notify_data:
+          name: Android Optionen (Optional)
+          description: >
+            **High Priority** - Sofortige Zustellung.
+
+            **Sticky Notification** - Bleibt bis zum manuellen Entfernen.
+
+            **Notification Channel** - Eigener Benachrichtigungskanal.
+
+            **Icon** - Eigenes Icon.
+          default: []
+          selector:
+            select:
+              multiple: true
+              options:
+                - label: High Priority
+                  value: "high_priority"
+                - label: Sticky Notification
+                  value: "sticky"
+                - label: Notification Channel
+                  value: "channel"
+                - label: Icon
+                  value: "icon"
+        temp_alarm_notify_channel:
+          name: Notification Channel - Android
+          description: >
+            Name des Benachrichtigungskanals.
+          default: []
+          selector:
+            text:
+        temp_alarm_notify_icon:
+          name: Icon - Android
+          description: >
+            Eigenes Icon fuer die Benachrichtigung.
+          default: "mdi:thermometer-alert"
+          selector:
+            icon:
+        temp_alarm_notify_icon_colour:
+          name: Icon Farbe - Android
+          description: >
+            Farbe des Benachrichtigungsicons.
+          default: [244, 67, 54]
+          selector:
+            color_rgb:
+        # -- UI Notification --
+        temp_alarm_include_ui_notify:
+          name: UI-Benachrichtigung (Optional)
+          description: >
+            Benachrichtigung in der Home Assistant Oberflaeche anzeigen.
+          default: disabled
+          selector:
+            select:
+              options:
+                - label: Aktivieren
+                  value: "enabled"
+                - label: Deaktivieren
+                  value: "disabled"
+        temp_alarm_ui_notify_title:
+          name: UI Titel
+          description: >
+            Titel der UI-Benachrichtigung.
+          default: Temperaturalarm!
+          selector:
+            text:
+        temp_alarm_ui_notify_message:
+          name: UI Nachricht
+          description: >
+            Nachricht der UI-Benachrichtigung. Gleiche Variablen wie bei Geraete-Benachrichtigung verfuegbar.
+          default: "{{trigger_sensor_name}}: {{trigger_value}} °C liegt ausserhalb des Normbereichs ({{temp_min}} - {{temp_max}} °C)"
+          selector:
+            text:
+              multiline: true
+        temp_alarm_ui_notify_id:
+          name: UI Notification ID
+          description: >
+            Eine ID haelt Benachrichtigungen organisiert. Leer lassen fuer separate Benachrichtigungen.
+          default: []
+          selector:
+            text:
+        # -- Dashboard Notification --
+        temp_alarm_include_dashboard_notify:
+          name: Dashboard-Benachrichtigung (Optional)
+          description: >
+            Alarm-Status auf einem Dashboard anzeigen via Text Helper.
+          default: disabled
+          selector:
+            select:
+              options:
+                - label: Aktivieren
+                  value: "enabled"
+                - label: Deaktivieren
+                  value: "disabled"
+        temp_alarm_dashboard_text_helper:
+          name: Dashboard Text Helper
+          description: >
+            Waehle den Text Helper fuer die Dashboard-Anzeige.
+          default: []
+          selector:
+            entity:
+              filter:
+                domain: input_text
+        # -- To-Do Integration --
+        temp_alarm_include_todo:
+          name: To-Do Liste (Optional)
+          description: >
+            Alarm direkt in eine To-Do Liste eintragen.
+          default: disabled
+          selector:
+            select:
+              options:
+                - label: Aktivieren
+                  value: "enabled"
+                - label: Deaktivieren
+                  value: "disabled"
+        temp_alarm_todo_list:
+          name: To-Do Liste
+          description: >
+            Waehle die To-Do Liste. Die Standard-Einkaufsliste ist nicht kompatibel.
+          default: []
+          selector:
+            entity:
+              filter:
+                domain: todo
+        temp_alarm_todo_title:
+          name: To-Do Aufgabentitel
+          description: >
+            Titel der To-Do Aufgabe.
+          default: "Temperaturalarm pruefen"
+          selector:
+            text:
+        # -- Action Buttons --
+        temp_alarm_notify_action_buttons:
+          name: Action Buttons (Optional)
+          description: >
+            Interaktive Buttons in der Push-Benachrichtigung zum Hinzufuegen in eine To-Do Liste.
+
+
+            ***Hinweis** - Fuer **Clear on Action** muss ein Notification Tag gesetzt sein.*
+          default: disabled
+          selector:
+            select:
+              options:
+                - label: To-Do Action Buttons
+                  value: "enable_todo_button"
+                - label: To-Do Action Buttons + Bestaetigung
+                  value: "enable_todo_button_confirmation"
+                - label: To-Do Action Buttons + Bei Aktion loeschen
+                  value: "enable_todo_button_clear"
+                - label: Deaktivieren
+                  value: "disabled"
+        temp_alarm_action_button_todo:
+          name: Action Button Label
+          description: >
+            Beschriftung des Action Buttons.
+          default: "Zur To-Do Liste!"
+          selector:
+            text:
+        temp_alarm_action_button_cancel:
+          name: Cancel Button Label
+          description: >
+            Beschriftung des Abbrechen-Buttons.
+          default: "Abbrechen"
+          selector:
+            text:
+        temp_alarm_action_button_confirmation_title:
+          name: Bestaetigungs-Titel
+          description: >
+            Titel der Bestaetigungsbenachrichtigung.
+          default: "Temperaturalarm - Bestaetigung"
+          selector:
+            text:
+        temp_alarm_action_button_confirmation_message:
+          name: Bestaetigungs-Nachricht (Action)
+          description: >
+            Nachricht bei Druecken des Action Buttons.
+          default: "Temperaturalarm wurde zur To-Do Liste hinzugefuegt"
+          selector:
+            text:
+        temp_alarm_cancel_button_confirmation_message:
+          name: Bestaetigungs-Nachricht (Abbrechen)
+          description: >
+            Nachricht bei Druecken des Abbrechen-Buttons.
+          default: "Abgebrochen - nichts wurde hinzugefuegt"
+          selector:
+            text:
+        # -- Custom Actions --
+        temp_alarm_include_custom_actions:
+          name: Custom Actions (Optional)
+          description: >
+            Eigene Aktionen ausfuehren bei Temperaturalarm.
+          default: disabled
+          selector:
+            select:
+              options:
+                - label: Aktivieren
+                  value: "enabled"
+                - label: Deaktivieren
+                  value: "disabled"
+        temp_alarm_custom_actions:
+          name: Custom Actions
+          description: >
+            Eigene Aktionen. Verfuegbare Variablen:
+
+            `{{trigger_sensor_name}}`, `{{trigger_value}}`, `{{trigger_entity}}`,
+            `{{temp_min}}`, `{{temp_max}}`, `{{all_temp_alarm_sensors}}`
+          default: []
+          selector:
+            action:
+
+    # ============================================================
+    # TEMPERATUR-ENTWARNUNG BENACHRICHTIGUNGEN
+    # ============================================================
+    temp_clear_notify:
+      name: "Temperatur-Entwarnung - Benachrichtigungen"
+      icon: mdi:thermometer-check
+      description: >
+        Aktionen die ausgefuehrt werden, wenn alle Temperatursensoren wieder im Normbereich sind.
+      collapsed: true
+      input:
+        temp_clear_include_device_notify:
+          name: Geraete-Benachrichtigung (Optional)
+          description: >
+            Push-Benachrichtigung an mobile Geraete senden.
+          default: disabled
+          selector:
+            select:
+              options:
+                - label: Aktivieren
+                  value: "enabled"
+                - label: Deaktivieren
+                  value: "disabled"
+        temp_clear_notify_device:
+          name: Geraete
+          description: >
+            Waehle die Geraete, die benachrichtigt werden sollen.
+          default: []
+          selector:
+            device:
+              filter:
+                - integration: mobile_app
+              multiple: true
+        temp_clear_notify_title:
+          name: Titel
+          description: >
+            Titel der Entwarnungs-Benachrichtigung.
+          default: "Temperatur-Entwarnung"
+          selector:
+            text:
+        temp_clear_notify_message:
+          name: Nachricht
+          description: >
+            Nachricht der Entwarnungs-Benachrichtigung.
+          default: "Alle Temperatursensoren sind wieder im Normalbereich ({{temp_min}} - {{temp_max}} °C)"
+          selector:
+            text:
+              multiline: true
+        temp_clear_notify_tag:
+          name: Notification Tag
+          description: >
+            Ein Tag haelt Benachrichtigungen organisiert.
+          default: []
+          selector:
+            text:
+        temp_clear_notify_interruption_level:
+          name: Interruption Level - iOS
+          description: >
+            Unterbrechungsstufe fuer iOS 15+.
+          default: active
+          selector:
+            select:
+              mode: dropdown
+              options:
+                - label: Standard
+                  value: "active"
+                - label: Kritisch
+                  value: "critical"
+                - label: Zeitkritisch
+                  value: "time-sensitive"
+                - label: Leise (ohne Bildschirm zu wecken)
+                  value: "passive"
+        temp_clear_notify_sound:
+          name: Benachrichtigungston - iOS
+          description: >
+            Dateiname des Benachrichtigungstons inkl. Dateiendung.
+          default: []
+          selector:
+            text:
+        temp_clear_notify_data:
+          name: Android Optionen (Optional)
+          description: >
+            Android-spezifische Benachrichtigungsoptionen.
+          default: []
+          selector:
+            select:
+              multiple: true
+              options:
+                - label: High Priority
+                  value: "high_priority"
+                - label: Sticky Notification
+                  value: "sticky"
+                - label: Notification Channel
+                  value: "channel"
+                - label: Icon
+                  value: "icon"
+        temp_clear_notify_channel:
+          name: Notification Channel - Android
+          description: >
+            Name des Benachrichtigungskanals.
+          default: []
+          selector:
+            text:
+        temp_clear_notify_icon:
+          name: Icon - Android
+          description: >
+            Eigenes Icon fuer die Benachrichtigung.
+          default: "mdi:thermometer-check"
+          selector:
+            icon:
+        temp_clear_notify_icon_colour:
+          name: Icon Farbe - Android
+          description: >
+            Farbe des Benachrichtigungsicons.
+          default: [76, 175, 80]
+          selector:
+            color_rgb:
+        # -- UI Notification --
+        temp_clear_include_ui_notify:
+          name: UI-Benachrichtigung (Optional)
+          description: >
+            Entwarnungs-Benachrichtigung in der Home Assistant Oberflaeche anzeigen.
+          default: disabled
+          selector:
+            select:
+              options:
+                - label: Aktivieren
+                  value: "enabled"
+                - label: Deaktivieren
+                  value: "disabled"
+        temp_clear_ui_notify_title:
+          name: UI Titel
+          description: >
+            Titel der UI-Benachrichtigung.
+          default: "Temperatur-Entwarnung"
+          selector:
+            text:
+        temp_clear_ui_notify_message:
+          name: UI Nachricht
+          description: >
+            Nachricht der UI-Benachrichtigung.
+          default: "Alle Temperatursensoren sind wieder im Normalbereich ({{temp_min}} - {{temp_max}} °C)"
+          selector:
+            text:
+              multiline: true
+        temp_clear_ui_notify_id:
+          name: UI Notification ID
+          description: >
+            Eine ID haelt Benachrichtigungen organisiert.
+          default: []
+          selector:
+            text:
+        # -- Dashboard Notification --
+        temp_clear_include_dashboard_notify:
+          name: Dashboard-Benachrichtigung (Optional)
+          description: >
+            Entwarnungs-Status auf einem Dashboard anzeigen.
+          default: disabled
+          selector:
+            select:
+              options:
+                - label: Aktivieren
+                  value: "enabled"
+                - label: Deaktivieren
+                  value: "disabled"
+        temp_clear_dashboard_text_helper:
+          name: Dashboard Text Helper
+          description: >
+            Waehle den Text Helper fuer die Dashboard-Anzeige.
+          default: []
+          selector:
+            entity:
+              filter:
+                domain: input_text
+        # -- Custom Actions --
+        temp_clear_include_custom_actions:
+          name: Custom Actions (Optional)
+          description: >
+            Eigene Aktionen ausfuehren bei Temperatur-Entwarnung.
+          default: disabled
+          selector:
+            select:
+              options:
+                - label: Aktivieren
+                  value: "enabled"
+                - label: Deaktivieren
+                  value: "disabled"
+        temp_clear_custom_actions:
+          name: Custom Actions
+          description: >
+            Eigene Aktionen bei Entwarnung.
+          default: []
+          selector:
+            action:
+
+    # ============================================================
+    # FEUCHTIGKEITS-ALARM BENACHRICHTIGUNGEN
+    # ============================================================
+    hum_alarm_notify:
+      name: "Feuchtigkeits-Alarm - Benachrichtigungen"
+      icon: mdi:water-alert
+      description: >
+        Aktionen die ausgefuehrt werden, wenn ein Feuchtigkeitssensor den Normbereich verlaesst.
+        Werden unterdrueckt solange ein Temperaturalarm aktiv ist.
+      collapsed: true
+      input:
+        hum_alarm_include_device_notify:
+          name: Geraete-Benachrichtigung (Optional)
+          description: >
+            Push-Benachrichtigung an mobile Geraete senden.
+          default: disabled
+          selector:
+            select:
+              options:
+                - label: Aktivieren
+                  value: "enabled"
+                - label: Deaktivieren
+                  value: "disabled"
+        hum_alarm_notify_device:
+          name: Geraete
+          description: >
+            Waehle die Geraete, die benachrichtigt werden sollen.
+          default: []
+          selector:
+            device:
+              filter:
+                - integration: mobile_app
+              multiple: true
+        hum_alarm_notify_title:
+          name: Titel
+          description: >
+            Titel der Push-Benachrichtigung.
+          default: Feuchtigkeitsalarm!
+          selector:
+            text:
+        hum_alarm_notify_message:
+          name: Nachricht
+          description: >
+            Nachricht der Push-Benachrichtigung. Verfuegbare Variablen:
+
+            - `{{trigger_sensor_name}}` - Sensorname
+
+            - `{{trigger_value}}` - Aktueller Messwert
+
+            - `{{hum_min}}` / `{{hum_max}}` - Grenzwerte
+
+            - `{{all_hum_alarm_sensors}}` - Alle Sensoren im Alarm
+          default: "{{trigger_sensor_name}}: {{trigger_value}} % liegt ausserhalb des Normbereichs ({{hum_min}} - {{hum_max}} %)"
+          selector:
+            text:
+              multiline: true
+        hum_alarm_notify_tag:
+          name: Notification Tag
+          description: >
+            Ein Tag haelt Benachrichtigungen organisiert.
+          default: []
+          selector:
+            text:
+        hum_alarm_notify_interruption_level:
+          name: Interruption Level - iOS
+          description: >
+            Unterbrechungsstufe fuer iOS 15+.
+          default: active
+          selector:
+            select:
+              mode: dropdown
+              options:
+                - label: Standard
+                  value: "active"
+                - label: Kritisch
+                  value: "critical"
+                - label: Zeitkritisch
+                  value: "time-sensitive"
+                - label: Leise (ohne Bildschirm zu wecken)
+                  value: "passive"
+        hum_alarm_notify_sound:
+          name: Benachrichtigungston - iOS
+          description: >
+            Dateiname des Benachrichtigungstons inkl. Dateiendung.
+          default: []
+          selector:
+            text:
+        hum_alarm_notify_data:
+          name: Android Optionen (Optional)
+          description: >
+            Android-spezifische Benachrichtigungsoptionen.
+          default: []
+          selector:
+            select:
+              multiple: true
+              options:
+                - label: High Priority
+                  value: "high_priority"
+                - label: Sticky Notification
+                  value: "sticky"
+                - label: Notification Channel
+                  value: "channel"
+                - label: Icon
+                  value: "icon"
+        hum_alarm_notify_channel:
+          name: Notification Channel - Android
+          description: >
+            Name des Benachrichtigungskanals.
+          default: []
+          selector:
+            text:
+        hum_alarm_notify_icon:
+          name: Icon - Android
+          description: >
+            Eigenes Icon fuer die Benachrichtigung.
+          default: "mdi:water-alert"
+          selector:
+            icon:
+        hum_alarm_notify_icon_colour:
+          name: Icon Farbe - Android
+          description: >
+            Farbe des Benachrichtigungsicons.
+          default: [33, 150, 243]
+          selector:
+            color_rgb:
+        # -- UI Notification --
+        hum_alarm_include_ui_notify:
+          name: UI-Benachrichtigung (Optional)
+          description: >
+            Benachrichtigung in der Home Assistant Oberflaeche anzeigen.
+          default: disabled
+          selector:
+            select:
+              options:
+                - label: Aktivieren
+                  value: "enabled"
+                - label: Deaktivieren
+                  value: "disabled"
+        hum_alarm_ui_notify_title:
+          name: UI Titel
+          description: >
+            Titel der UI-Benachrichtigung.
+          default: Feuchtigkeitsalarm!
+          selector:
+            text:
+        hum_alarm_ui_notify_message:
+          name: UI Nachricht
+          description: >
+            Nachricht der UI-Benachrichtigung.
+          default: "{{trigger_sensor_name}}: {{trigger_value}} % liegt ausserhalb des Normbereichs ({{hum_min}} - {{hum_max}} %)"
+          selector:
+            text:
+              multiline: true
+        hum_alarm_ui_notify_id:
+          name: UI Notification ID
+          description: >
+            Eine ID haelt Benachrichtigungen organisiert.
+          default: []
+          selector:
+            text:
+        # -- Dashboard Notification --
+        hum_alarm_include_dashboard_notify:
+          name: Dashboard-Benachrichtigung (Optional)
+          description: >
+            Alarm-Status auf einem Dashboard anzeigen via Text Helper.
+          default: disabled
+          selector:
+            select:
+              options:
+                - label: Aktivieren
+                  value: "enabled"
+                - label: Deaktivieren
+                  value: "disabled"
+        hum_alarm_dashboard_text_helper:
+          name: Dashboard Text Helper
+          description: >
+            Waehle den Text Helper fuer die Dashboard-Anzeige.
+          default: []
+          selector:
+            entity:
+              filter:
+                domain: input_text
+        # -- To-Do Integration --
+        hum_alarm_include_todo:
+          name: To-Do Liste (Optional)
+          description: >
+            Alarm direkt in eine To-Do Liste eintragen.
+          default: disabled
+          selector:
+            select:
+              options:
+                - label: Aktivieren
+                  value: "enabled"
+                - label: Deaktivieren
+                  value: "disabled"
+        hum_alarm_todo_list:
+          name: To-Do Liste
+          description: >
+            Waehle die To-Do Liste.
+          default: []
+          selector:
+            entity:
+              filter:
+                domain: todo
+        hum_alarm_todo_title:
+          name: To-Do Aufgabentitel
+          description: >
+            Titel der To-Do Aufgabe.
+          default: "Feuchtigkeitsalarm pruefen"
+          selector:
+            text:
+        # -- Action Buttons --
+        hum_alarm_notify_action_buttons:
+          name: Action Buttons (Optional)
+          description: >
+            Interaktive Buttons in der Push-Benachrichtigung.
+          default: disabled
+          selector:
+            select:
+              options:
+                - label: To-Do Action Buttons
+                  value: "enable_todo_button"
+                - label: To-Do Action Buttons + Bestaetigung
+                  value: "enable_todo_button_confirmation"
+                - label: To-Do Action Buttons + Bei Aktion loeschen
+                  value: "enable_todo_button_clear"
+                - label: Deaktivieren
+                  value: "disabled"
+        hum_alarm_action_button_todo:
+          name: Action Button Label
+          description: >
+            Beschriftung des Action Buttons.
+          default: "Zur To-Do Liste!"
+          selector:
+            text:
+        hum_alarm_action_button_cancel:
+          name: Cancel Button Label
+          description: >
+            Beschriftung des Abbrechen-Buttons.
+          default: "Abbrechen"
+          selector:
+            text:
+        hum_alarm_action_button_confirmation_title:
+          name: Bestaetigungs-Titel
+          description: >
+            Titel der Bestaetigungsbenachrichtigung.
+          default: "Feuchtigkeitsalarm - Bestaetigung"
+          selector:
+            text:
+        hum_alarm_action_button_confirmation_message:
+          name: Bestaetigungs-Nachricht (Action)
+          description: >
+            Nachricht bei Druecken des Action Buttons.
+          default: "Feuchtigkeitsalarm wurde zur To-Do Liste hinzugefuegt"
+          selector:
+            text:
+        hum_alarm_cancel_button_confirmation_message:
+          name: Bestaetigungs-Nachricht (Abbrechen)
+          description: >
+            Nachricht bei Druecken des Abbrechen-Buttons.
+          default: "Abgebrochen - nichts wurde hinzugefuegt"
+          selector:
+            text:
+        # -- Custom Actions --
+        hum_alarm_include_custom_actions:
+          name: Custom Actions (Optional)
+          description: >
+            Eigene Aktionen ausfuehren bei Feuchtigkeitsalarm.
+          default: disabled
+          selector:
+            select:
+              options:
+                - label: Aktivieren
+                  value: "enabled"
+                - label: Deaktivieren
+                  value: "disabled"
+        hum_alarm_custom_actions:
+          name: Custom Actions
+          description: >
+            Eigene Aktionen. Verfuegbare Variablen:
+
+            `{{trigger_sensor_name}}`, `{{trigger_value}}`, `{{trigger_entity}}`,
+            `{{hum_min}}`, `{{hum_max}}`, `{{all_hum_alarm_sensors}}`
+          default: []
+          selector:
+            action:
+
+    # ============================================================
+    # FEUCHTIGKEITS-ENTWARNUNG BENACHRICHTIGUNGEN
+    # ============================================================
+    hum_clear_notify:
+      name: "Feuchtigkeits-Entwarnung - Benachrichtigungen"
+      icon: mdi:water-check
+      description: >
+        Aktionen die ausgefuehrt werden, wenn alle Feuchtigkeitssensoren wieder im Normbereich sind.
+      collapsed: true
+      input:
+        hum_clear_include_device_notify:
+          name: Geraete-Benachrichtigung (Optional)
+          description: >
+            Push-Benachrichtigung an mobile Geraete senden.
+          default: disabled
+          selector:
+            select:
+              options:
+                - label: Aktivieren
+                  value: "enabled"
+                - label: Deaktivieren
+                  value: "disabled"
+        hum_clear_notify_device:
+          name: Geraete
+          description: >
+            Waehle die Geraete, die benachrichtigt werden sollen.
+          default: []
+          selector:
+            device:
+              filter:
+                - integration: mobile_app
+              multiple: true
+        hum_clear_notify_title:
+          name: Titel
+          description: >
+            Titel der Entwarnungs-Benachrichtigung.
+          default: "Feuchtigkeits-Entwarnung"
+          selector:
+            text:
+        hum_clear_notify_message:
+          name: Nachricht
+          description: >
+            Nachricht der Entwarnungs-Benachrichtigung.
+          default: "Alle Feuchtigkeitssensoren sind wieder im Normalbereich ({{hum_min}} - {{hum_max}} %)"
+          selector:
+            text:
+              multiline: true
+        hum_clear_notify_tag:
+          name: Notification Tag
+          description: >
+            Ein Tag haelt Benachrichtigungen organisiert.
+          default: []
+          selector:
+            text:
+        hum_clear_notify_interruption_level:
+          name: Interruption Level - iOS
+          description: >
+            Unterbrechungsstufe fuer iOS 15+.
+          default: active
+          selector:
+            select:
+              mode: dropdown
+              options:
+                - label: Standard
+                  value: "active"
+                - label: Kritisch
+                  value: "critical"
+                - label: Zeitkritisch
+                  value: "time-sensitive"
+                - label: Leise (ohne Bildschirm zu wecken)
+                  value: "passive"
+        hum_clear_notify_sound:
+          name: Benachrichtigungston - iOS
+          description: >
+            Dateiname des Benachrichtigungstons inkl. Dateiendung.
+          default: []
+          selector:
+            text:
+        hum_clear_notify_data:
+          name: Android Optionen (Optional)
+          description: >
+            Android-spezifische Benachrichtigungsoptionen.
+          default: []
+          selector:
+            select:
+              multiple: true
+              options:
+                - label: High Priority
+                  value: "high_priority"
+                - label: Sticky Notification
+                  value: "sticky"
+                - label: Notification Channel
+                  value: "channel"
+                - label: Icon
+                  value: "icon"
+        hum_clear_notify_channel:
+          name: Notification Channel - Android
+          description: >
+            Name des Benachrichtigungskanals.
+          default: []
+          selector:
+            text:
+        hum_clear_notify_icon:
+          name: Icon - Android
+          description: >
+            Eigenes Icon fuer die Benachrichtigung.
+          default: "mdi:water-check"
+          selector:
+            icon:
+        hum_clear_notify_icon_colour:
+          name: Icon Farbe - Android
+          description: >
+            Farbe des Benachrichtigungsicons.
+          default: [76, 175, 80]
+          selector:
+            color_rgb:
+        # -- UI Notification --
+        hum_clear_include_ui_notify:
+          name: UI-Benachrichtigung (Optional)
+          description: >
+            Entwarnungs-Benachrichtigung in der Home Assistant Oberflaeche anzeigen.
+          default: disabled
+          selector:
+            select:
+              options:
+                - label: Aktivieren
+                  value: "enabled"
+                - label: Deaktivieren
+                  value: "disabled"
+        hum_clear_ui_notify_title:
+          name: UI Titel
+          description: >
+            Titel der UI-Benachrichtigung.
+          default: "Feuchtigkeits-Entwarnung"
+          selector:
+            text:
+        hum_clear_ui_notify_message:
+          name: UI Nachricht
+          description: >
+            Nachricht der UI-Benachrichtigung.
+          default: "Alle Feuchtigkeitssensoren sind wieder im Normalbereich ({{hum_min}} - {{hum_max}} %)"
+          selector:
+            text:
+              multiline: true
+        hum_clear_ui_notify_id:
+          name: UI Notification ID
+          description: >
+            Eine ID haelt Benachrichtigungen organisiert.
+          default: []
+          selector:
+            text:
+        # -- Dashboard Notification --
+        hum_clear_include_dashboard_notify:
+          name: Dashboard-Benachrichtigung (Optional)
+          description: >
+            Entwarnungs-Status auf einem Dashboard anzeigen.
+          default: disabled
+          selector:
+            select:
+              options:
+                - label: Aktivieren
+                  value: "enabled"
+                - label: Deaktivieren
+                  value: "disabled"
+        hum_clear_dashboard_text_helper:
+          name: Dashboard Text Helper
+          description: >
+            Waehle den Text Helper fuer die Dashboard-Anzeige.
+          default: []
+          selector:
+            entity:
+              filter:
+                domain: input_text
+        # -- Custom Actions --
+        hum_clear_include_custom_actions:
+          name: Custom Actions (Optional)
+          description: >
+            Eigene Aktionen ausfuehren bei Feuchtigkeits-Entwarnung.
+          default: disabled
+          selector:
+            select:
+              options:
+                - label: Aktivieren
+                  value: "enabled"
+                - label: Deaktivieren
+                  value: "disabled"
+        hum_clear_custom_actions:
+          name: Custom Actions
+          description: >
+            Eigene Aktionen bei Entwarnung.
+          default: []
+          selector:
+            action:
+
+    # ============================================================
+    # GLOBALE BEDINGUNGEN
+    # ============================================================
+    global_conditions_settings:
+      name: "Globale Bedingungen"
+      icon: mdi:earth
+      collapsed: true
+      input:
+        global_conditions:
+          name: Globale Bedingungen
+          description: >
+            Optionale Bedingungen die erfuellt sein muessen, damit die Automation ausgefuehrt wird.
+          default: []
+          selector:
+            condition:
+
+# ============================================================
+# AUTOMATION SETTINGS
+# ============================================================
+mode: queued
+max: 10
+max_exceeded: silent
+
+# ============================================================
+# VARIABLES
+# ============================================================
+variables:
+  # Sensor settings
+  temperature_sensors: !input temperature_sensors
+  humidity_sensors: !input humidity_sensors
+  temp_min: !input temp_min
+  temp_max: !input temp_max
+  hum_min: !input hum_min
+  hum_max: !input hum_max
+  hysteresis: !input hysteresis
+  temp_alarm_boolean: !input temp_alarm_boolean
+  hum_alarm_boolean: !input hum_alarm_boolean
+
+  # Hysteresis-adjusted thresholds for all-clear
+  temp_clear_min: "{{ (temp_min | float) + (hysteresis | float) }}"
+  temp_clear_max: "{{ (temp_max | float) - (hysteresis | float) }}"
+  hum_clear_min: "{{ (hum_min | float) + (hysteresis | float) }}"
+  hum_clear_max: "{{ (hum_max | float) - (hysteresis | float) }}"
+
+  # Trigger context
+  trigger_entity: "{{ trigger.entity_id }}"
+  trigger_value: "{{ trigger.to_state.state | float(0) }}"
+  trigger_sensor_name: "{{ state_attr(trigger.entity_id, 'friendly_name') | default(trigger.entity_id) }}"
+
+  # Current alarm states
+  is_temp_alarm_active: "{{ states(temp_alarm_boolean) == 'on' if temp_alarm_boolean else false }}"
+  is_hum_alarm_active: "{{ states(hum_alarm_boolean) == 'on' if hum_alarm_boolean else false }}"
+
+  # All sensors alarm list (for notifications)
+  all_temp_alarm_sensors: >-
+    {% set ns = namespace(sensors=[]) %}
+    {% for sid in temperature_sensors %}
+      {% set val = states(sid) | float(none) %}
+      {% if val is not none and (val > (temp_max | float) or val < (temp_min | float)) %}
+        {% set name = state_attr(sid, 'friendly_name') | default(sid) %}
+        {% set area = area_name(sid) %}
+        {% set area_text = ' (' ~ area ~ ')' if area is not none else '' %}
+        {% set ns.sensors = ns.sensors + [name ~ area_text ~ ': ' ~ val ~ ' °C'] %}
+      {% endif %}
+    {% endfor %}
+    {{ ns.sensors | join('\n') }}
+
+  all_hum_alarm_sensors: >-
+    {% set ns = namespace(sensors=[]) %}
+    {% for sid in humidity_sensors %}
+      {% set val = states(sid) | float(none) %}
+      {% if val is not none and (val > (hum_max | float) or val < (hum_min | float)) %}
+        {% set name = state_attr(sid, 'friendly_name') | default(sid) %}
+        {% set area = area_name(sid) %}
+        {% set area_text = ' (' ~ area ~ ')' if area is not none else '' %}
+        {% set ns.sensors = ns.sensors + [name ~ area_text ~ ': ' ~ val ~ ' %'] %}
+      {% endif %}
+    {% endfor %}
+    {{ ns.sensors | join('\n') }}
+
+  # All-clear checks
+  all_temp_in_range: >-
+    {% set ns = namespace(all_ok=true) %}
+    {% for sid in temperature_sensors %}
+      {% set val = states(sid) | float(none) %}
+      {% if val is none or val > (temp_clear_max | float) or val < (temp_clear_min | float) %}
+        {% set ns.all_ok = false %}
+      {% endif %}
+    {% endfor %}
+    {{ ns.all_ok }}
+
+  all_hum_in_range: >-
+    {% set ns = namespace(all_ok=true) %}
+    {% for sid in humidity_sensors %}
+      {% set val = states(sid) | float(none) %}
+      {% if val is none or val > (hum_clear_max | float) or val < (hum_clear_min | float) %}
+        {% set ns.all_ok = false %}
+      {% endif %}
+    {% endfor %}
+    {{ ns.all_ok }}
+
+  # Temp alarm notification inputs
+  temp_alarm_include_device_notify: !input temp_alarm_include_device_notify
+  temp_alarm_notify_device: !input temp_alarm_notify_device
+  temp_alarm_notify_title: !input temp_alarm_notify_title
+  temp_alarm_notify_message: !input temp_alarm_notify_message
+  temp_alarm_notify_tag: !input temp_alarm_notify_tag
+  temp_alarm_notify_interruption_level: !input temp_alarm_notify_interruption_level
+  temp_alarm_notify_sound: !input temp_alarm_notify_sound
+  temp_alarm_notify_data: !input temp_alarm_notify_data
+  temp_alarm_notify_channel: !input temp_alarm_notify_channel
+  temp_alarm_notify_icon: !input temp_alarm_notify_icon
+  temp_alarm_notify_icon_colour: !input temp_alarm_notify_icon_colour
+  temp_alarm_include_ui_notify: !input temp_alarm_include_ui_notify
+  temp_alarm_ui_notify_title: !input temp_alarm_ui_notify_title
+  temp_alarm_ui_notify_message: !input temp_alarm_ui_notify_message
+  temp_alarm_ui_notify_id: !input temp_alarm_ui_notify_id
+  temp_alarm_include_dashboard_notify: !input temp_alarm_include_dashboard_notify
+  temp_alarm_dashboard_text_helper: !input temp_alarm_dashboard_text_helper
+  temp_alarm_include_todo: !input temp_alarm_include_todo
+  temp_alarm_todo_list: !input temp_alarm_todo_list
+  temp_alarm_todo_title: !input temp_alarm_todo_title
+  temp_alarm_notify_action_buttons: !input temp_alarm_notify_action_buttons
+  temp_alarm_action_button_todo: !input temp_alarm_action_button_todo
+  temp_alarm_action_button_cancel: !input temp_alarm_action_button_cancel
+  temp_alarm_action_button_confirmation_title: !input temp_alarm_action_button_confirmation_title
+  temp_alarm_action_button_confirmation_message: !input temp_alarm_action_button_confirmation_message
+  temp_alarm_cancel_button_confirmation_message: !input temp_alarm_cancel_button_confirmation_message
+  temp_alarm_include_custom_actions: !input temp_alarm_include_custom_actions
+
+  # Temp clear notification inputs
+  temp_clear_include_device_notify: !input temp_clear_include_device_notify
+  temp_clear_notify_device: !input temp_clear_notify_device
+  temp_clear_notify_title: !input temp_clear_notify_title
+  temp_clear_notify_message: !input temp_clear_notify_message
+  temp_clear_notify_tag: !input temp_clear_notify_tag
+  temp_clear_notify_interruption_level: !input temp_clear_notify_interruption_level
+  temp_clear_notify_sound: !input temp_clear_notify_sound
+  temp_clear_notify_data: !input temp_clear_notify_data
+  temp_clear_notify_channel: !input temp_clear_notify_channel
+  temp_clear_notify_icon: !input temp_clear_notify_icon
+  temp_clear_notify_icon_colour: !input temp_clear_notify_icon_colour
+  temp_clear_include_ui_notify: !input temp_clear_include_ui_notify
+  temp_clear_ui_notify_title: !input temp_clear_ui_notify_title
+  temp_clear_ui_notify_message: !input temp_clear_ui_notify_message
+  temp_clear_ui_notify_id: !input temp_clear_ui_notify_id
+  temp_clear_include_dashboard_notify: !input temp_clear_include_dashboard_notify
+  temp_clear_dashboard_text_helper: !input temp_clear_dashboard_text_helper
+  temp_clear_include_custom_actions: !input temp_clear_include_custom_actions
+
+  # Hum alarm notification inputs
+  hum_alarm_include_device_notify: !input hum_alarm_include_device_notify
+  hum_alarm_notify_device: !input hum_alarm_notify_device
+  hum_alarm_notify_title: !input hum_alarm_notify_title
+  hum_alarm_notify_message: !input hum_alarm_notify_message
+  hum_alarm_notify_tag: !input hum_alarm_notify_tag
+  hum_alarm_notify_interruption_level: !input hum_alarm_notify_interruption_level
+  hum_alarm_notify_sound: !input hum_alarm_notify_sound
+  hum_alarm_notify_data: !input hum_alarm_notify_data
+  hum_alarm_notify_channel: !input hum_alarm_notify_channel
+  hum_alarm_notify_icon: !input hum_alarm_notify_icon
+  hum_alarm_notify_icon_colour: !input hum_alarm_notify_icon_colour
+  hum_alarm_include_ui_notify: !input hum_alarm_include_ui_notify
+  hum_alarm_ui_notify_title: !input hum_alarm_ui_notify_title
+  hum_alarm_ui_notify_message: !input hum_alarm_ui_notify_message
+  hum_alarm_ui_notify_id: !input hum_alarm_ui_notify_id
+  hum_alarm_include_dashboard_notify: !input hum_alarm_include_dashboard_notify
+  hum_alarm_dashboard_text_helper: !input hum_alarm_dashboard_text_helper
+  hum_alarm_include_todo: !input hum_alarm_include_todo
+  hum_alarm_todo_list: !input hum_alarm_todo_list
+  hum_alarm_todo_title: !input hum_alarm_todo_title
+  hum_alarm_notify_action_buttons: !input hum_alarm_notify_action_buttons
+  hum_alarm_action_button_todo: !input hum_alarm_action_button_todo
+  hum_alarm_action_button_cancel: !input hum_alarm_action_button_cancel
+  hum_alarm_action_button_confirmation_title: !input hum_alarm_action_button_confirmation_title
+  hum_alarm_action_button_confirmation_message: !input hum_alarm_action_button_confirmation_message
+  hum_alarm_cancel_button_confirmation_message: !input hum_alarm_cancel_button_confirmation_message
+  hum_alarm_include_custom_actions: !input hum_alarm_include_custom_actions
+
+  # Hum clear notification inputs
+  hum_clear_include_device_notify: !input hum_clear_include_device_notify
+  hum_clear_notify_device: !input hum_clear_notify_device
+  hum_clear_notify_title: !input hum_clear_notify_title
+  hum_clear_notify_message: !input hum_clear_notify_message
+  hum_clear_notify_tag: !input hum_clear_notify_tag
+  hum_clear_notify_interruption_level: !input hum_clear_notify_interruption_level
+  hum_clear_notify_sound: !input hum_clear_notify_sound
+  hum_clear_notify_data: !input hum_clear_notify_data
+  hum_clear_notify_channel: !input hum_clear_notify_channel
+  hum_clear_notify_icon: !input hum_clear_notify_icon
+  hum_clear_notify_icon_colour: !input hum_clear_notify_icon_colour
+  hum_clear_include_ui_notify: !input hum_clear_include_ui_notify
+  hum_clear_ui_notify_title: !input hum_clear_ui_notify_title
+  hum_clear_ui_notify_message: !input hum_clear_ui_notify_message
+  hum_clear_ui_notify_id: !input hum_clear_ui_notify_id
+  hum_clear_include_dashboard_notify: !input hum_clear_include_dashboard_notify
+  hum_clear_dashboard_text_helper: !input hum_clear_dashboard_text_helper
+  hum_clear_include_custom_actions: !input hum_clear_include_custom_actions
+
+  # Device message data computation helpers (reusable macro pattern)
+  temp_alarm_device_message_data: >-
+    {% set message = namespace(data={}) %}
+    {% set push = namespace(data={}) %}
+    {% if temp_alarm_notify_interruption_level in ['active', 'critical', 'time-sensitive', 'passive'] %}
+      {% set push.data = dict(push.data, **{ 'interruption-level': temp_alarm_notify_interruption_level }) %}
+    {% endif %}
+    {% if temp_alarm_notify_sound != [] %}
+      {% set push.data = dict(push.data, **{ 'sound': temp_alarm_notify_sound }) %}
+    {% endif %}
+    {% if push.data %}
+      {% set message.data = dict(message.data, **{ 'push': push.data }) %}
+    {% endif %}
+    {% if 'high_priority' in temp_alarm_notify_data %}
+      {% set message.data = dict(message.data, **{ 'ttl': 0, 'priority': 'high' }) %}
+    {% endif %}
+    {% if 'channel' in temp_alarm_notify_data %}
+      {% set message.data = dict(message.data, **{ 'channel': temp_alarm_notify_channel }) %}
+    {% endif %}
+    {% if 'sticky' in temp_alarm_notify_data %}
+      {% set message.data = dict(message.data, **{ 'sticky': "true" }) %}
+    {% endif %}
+    {% if 'icon' in temp_alarm_notify_data %}
+      {% set message.data = dict(message.data, **{ 'notification_icon': temp_alarm_notify_icon }) %}
+      {% if temp_alarm_notify_icon_colour | length == 3 %}
+        {% set icon_colour = '#%02x%02x%02x' | format(temp_alarm_notify_icon_colour[0], temp_alarm_notify_icon_colour[1], temp_alarm_notify_icon_colour[2]) %}
+        {% set message.data = dict(message.data, **{ 'color': icon_colour }) %}
+      {% endif %}
+    {% endif %}
+    {% if temp_alarm_notify_tag != [] %}
+      {% set message.data = dict(message.data, **{ 'tag': temp_alarm_notify_tag }) %}
+    {% endif %}
+    {{ message.data }}
+
+  temp_alarm_device_message_data_action_button: >-
+    {% set message = namespace(data={}) %}
+    {% set push = namespace(data={}) %}
+    {% if temp_alarm_notify_interruption_level in ['active', 'critical', 'time-sensitive', 'passive'] %}
+      {% set push.data = dict(push.data, **{ 'interruption-level': temp_alarm_notify_interruption_level }) %}
+    {% endif %}
+    {% if temp_alarm_notify_sound != [] %}
+      {% set push.data = dict(push.data, **{ 'sound': temp_alarm_notify_sound }) %}
+    {% endif %}
+    {% if push.data %}
+      {% set message.data = dict(message.data, **{ 'push': push.data }) %}
+    {% endif %}
+    {% if 'high_priority' in temp_alarm_notify_data %}
+      {% set message.data = dict(message.data, **{ 'ttl': 0, 'priority': 'high' }) %}
+    {% endif %}
+    {% if 'channel' in temp_alarm_notify_data %}
+      {% set message.data = dict(message.data, **{ 'channel': temp_alarm_notify_channel }) %}
+    {% endif %}
+    {% if 'sticky' in temp_alarm_notify_data %}
+      {% set message.data = dict(message.data, **{ 'sticky': "true" }) %}
+    {% endif %}
+    {% if 'icon' in temp_alarm_notify_data %}
+      {% set message.data = dict(message.data, **{ 'notification_icon': temp_alarm_notify_icon }) %}
+      {% if temp_alarm_notify_icon_colour | length == 3 %}
+        {% set icon_colour = '#%02x%02x%02x' | format(temp_alarm_notify_icon_colour[0], temp_alarm_notify_icon_colour[1], temp_alarm_notify_icon_colour[2]) %}
+        {% set message.data = dict(message.data, **{ 'color': icon_colour }) %}
+      {% endif %}
+    {% endif %}
+    {% if temp_alarm_notify_tag != [] %}
+      {% set message.data = dict(message.data, **{ 'tag': temp_alarm_notify_tag }) %}
+    {% endif %}
+    {% set actions = [
+      {'action': temp_alarm_action_button_todo, 'title': temp_alarm_action_button_todo},
+      {'action': temp_alarm_action_button_cancel, 'title': temp_alarm_action_button_cancel}
+    ] %}
+    {% set message.data = dict(message.data, **{ 'actions': actions }) %}
+    {{ message.data }}
+
+  temp_clear_device_message_data: >-
+    {% set message = namespace(data={}) %}
+    {% set push = namespace(data={}) %}
+    {% if temp_clear_notify_interruption_level in ['active', 'critical', 'time-sensitive', 'passive'] %}
+      {% set push.data = dict(push.data, **{ 'interruption-level': temp_clear_notify_interruption_level }) %}
+    {% endif %}
+    {% if temp_clear_notify_sound != [] %}
+      {% set push.data = dict(push.data, **{ 'sound': temp_clear_notify_sound }) %}
+    {% endif %}
+    {% if push.data %}
+      {% set message.data = dict(message.data, **{ 'push': push.data }) %}
+    {% endif %}
+    {% if 'high_priority' in temp_clear_notify_data %}
+      {% set message.data = dict(message.data, **{ 'ttl': 0, 'priority': 'high' }) %}
+    {% endif %}
+    {% if 'channel' in temp_clear_notify_data %}
+      {% set message.data = dict(message.data, **{ 'channel': temp_clear_notify_channel }) %}
+    {% endif %}
+    {% if 'sticky' in temp_clear_notify_data %}
+      {% set message.data = dict(message.data, **{ 'sticky': "true" }) %}
+    {% endif %}
+    {% if 'icon' in temp_clear_notify_data %}
+      {% set message.data = dict(message.data, **{ 'notification_icon': temp_clear_notify_icon }) %}
+      {% if temp_clear_notify_icon_colour | length == 3 %}
+        {% set icon_colour = '#%02x%02x%02x' | format(temp_clear_notify_icon_colour[0], temp_clear_notify_icon_colour[1], temp_clear_notify_icon_colour[2]) %}
+        {% set message.data = dict(message.data, **{ 'color': icon_colour }) %}
+      {% endif %}
+    {% endif %}
+    {% if temp_clear_notify_tag != [] %}
+      {% set message.data = dict(message.data, **{ 'tag': temp_clear_notify_tag }) %}
+    {% endif %}
+    {{ message.data }}
+
+  hum_alarm_device_message_data: >-
+    {% set message = namespace(data={}) %}
+    {% set push = namespace(data={}) %}
+    {% if hum_alarm_notify_interruption_level in ['active', 'critical', 'time-sensitive', 'passive'] %}
+      {% set push.data = dict(push.data, **{ 'interruption-level': hum_alarm_notify_interruption_level }) %}
+    {% endif %}
+    {% if hum_alarm_notify_sound != [] %}
+      {% set push.data = dict(push.data, **{ 'sound': hum_alarm_notify_sound }) %}
+    {% endif %}
+    {% if push.data %}
+      {% set message.data = dict(message.data, **{ 'push': push.data }) %}
+    {% endif %}
+    {% if 'high_priority' in hum_alarm_notify_data %}
+      {% set message.data = dict(message.data, **{ 'ttl': 0, 'priority': 'high' }) %}
+    {% endif %}
+    {% if 'channel' in hum_alarm_notify_data %}
+      {% set message.data = dict(message.data, **{ 'channel': hum_alarm_notify_channel }) %}
+    {% endif %}
+    {% if 'sticky' in hum_alarm_notify_data %}
+      {% set message.data = dict(message.data, **{ 'sticky': "true" }) %}
+    {% endif %}
+    {% if 'icon' in hum_alarm_notify_data %}
+      {% set message.data = dict(message.data, **{ 'notification_icon': hum_alarm_notify_icon }) %}
+      {% if hum_alarm_notify_icon_colour | length == 3 %}
+        {% set icon_colour = '#%02x%02x%02x' | format(hum_alarm_notify_icon_colour[0], hum_alarm_notify_icon_colour[1], hum_alarm_notify_icon_colour[2]) %}
+        {% set message.data = dict(message.data, **{ 'color': icon_colour }) %}
+      {% endif %}
+    {% endif %}
+    {% if hum_alarm_notify_tag != [] %}
+      {% set message.data = dict(message.data, **{ 'tag': hum_alarm_notify_tag }) %}
+    {% endif %}
+    {{ message.data }}
+
+  hum_alarm_device_message_data_action_button: >-
+    {% set message = namespace(data={}) %}
+    {% set push = namespace(data={}) %}
+    {% if hum_alarm_notify_interruption_level in ['active', 'critical', 'time-sensitive', 'passive'] %}
+      {% set push.data = dict(push.data, **{ 'interruption-level': hum_alarm_notify_interruption_level }) %}
+    {% endif %}
+    {% if hum_alarm_notify_sound != [] %}
+      {% set push.data = dict(push.data, **{ 'sound': hum_alarm_notify_sound }) %}
+    {% endif %}
+    {% if push.data %}
+      {% set message.data = dict(message.data, **{ 'push': push.data }) %}
+    {% endif %}
+    {% if 'high_priority' in hum_alarm_notify_data %}
+      {% set message.data = dict(message.data, **{ 'ttl': 0, 'priority': 'high' }) %}
+    {% endif %}
+    {% if 'channel' in hum_alarm_notify_data %}
+      {% set message.data = dict(message.data, **{ 'channel': hum_alarm_notify_channel }) %}
+    {% endif %}
+    {% if 'sticky' in hum_alarm_notify_data %}
+      {% set message.data = dict(message.data, **{ 'sticky': "true" }) %}
+    {% endif %}
+    {% if 'icon' in hum_alarm_notify_data %}
+      {% set message.data = dict(message.data, **{ 'notification_icon': hum_alarm_notify_icon }) %}
+      {% if hum_alarm_notify_icon_colour | length == 3 %}
+        {% set icon_colour = '#%02x%02x%02x' | format(hum_alarm_notify_icon_colour[0], hum_alarm_notify_icon_colour[1], hum_alarm_notify_icon_colour[2]) %}
+        {% set message.data = dict(message.data, **{ 'color': icon_colour }) %}
+      {% endif %}
+    {% endif %}
+    {% if hum_alarm_notify_tag != [] %}
+      {% set message.data = dict(message.data, **{ 'tag': hum_alarm_notify_tag }) %}
+    {% endif %}
+    {% set actions = [
+      {'action': hum_alarm_action_button_todo, 'title': hum_alarm_action_button_todo},
+      {'action': hum_alarm_action_button_cancel, 'title': hum_alarm_action_button_cancel}
+    ] %}
+    {% set message.data = dict(message.data, **{ 'actions': actions }) %}
+    {{ message.data }}
+
+  hum_clear_device_message_data: >-
+    {% set message = namespace(data={}) %}
+    {% set push = namespace(data={}) %}
+    {% if hum_clear_notify_interruption_level in ['active', 'critical', 'time-sensitive', 'passive'] %}
+      {% set push.data = dict(push.data, **{ 'interruption-level': hum_clear_notify_interruption_level }) %}
+    {% endif %}
+    {% if hum_clear_notify_sound != [] %}
+      {% set push.data = dict(push.data, **{ 'sound': hum_clear_notify_sound }) %}
+    {% endif %}
+    {% if push.data %}
+      {% set message.data = dict(message.data, **{ 'push': push.data }) %}
+    {% endif %}
+    {% if 'high_priority' in hum_clear_notify_data %}
+      {% set message.data = dict(message.data, **{ 'ttl': 0, 'priority': 'high' }) %}
+    {% endif %}
+    {% if 'channel' in hum_clear_notify_data %}
+      {% set message.data = dict(message.data, **{ 'channel': hum_clear_notify_channel }) %}
+    {% endif %}
+    {% if 'sticky' in hum_clear_notify_data %}
+      {% set message.data = dict(message.data, **{ 'sticky': "true" }) %}
+    {% endif %}
+    {% if 'icon' in hum_clear_notify_data %}
+      {% set message.data = dict(message.data, **{ 'notification_icon': hum_clear_notify_icon }) %}
+      {% if hum_clear_notify_icon_colour | length == 3 %}
+        {% set icon_colour = '#%02x%02x%02x' | format(hum_clear_notify_icon_colour[0], hum_clear_notify_icon_colour[1], hum_clear_notify_icon_colour[2]) %}
+        {% set message.data = dict(message.data, **{ 'color': icon_colour }) %}
+      {% endif %}
+    {% endif %}
+    {% if hum_clear_notify_tag != [] %}
+      {% set message.data = dict(message.data, **{ 'tag': hum_clear_notify_tag }) %}
+    {% endif %}
+    {{ message.data }}
+
+# ============================================================
+# TRIGGERS
+# ============================================================
+triggers:
+  - trigger: state
+    entity_id: !input temperature_sensors
+    id: 'temp_change'
+  - trigger: state
+    entity_id: !input humidity_sensors
+    id: 'hum_change'
+
+# ============================================================
+# CONDITIONS
+# ============================================================
+condition:
+  # Filter non-numeric states (unavailable, unknown, etc.)
+  - condition: template
+    value_template: "{{ trigger.to_state.state | float(none) is not none }}"
+  # Global conditions
+  - condition: and
+    conditions: !input global_conditions
+
+# ============================================================
+# ACTIONS
+# ============================================================
+action:
+  - choose:
+    # ========================================================
+    # TEMPERATURE SENSOR CHANGE
+    # ========================================================
+    - alias: "Temperatursensor hat sich geaendert"
+      conditions:
+        - condition: trigger
+          id: 'temp_change'
+      sequence:
+        - choose:
+          # -- TEMPERATUR-ALARM: Wert ausserhalb Normbereich --
+          - alias: "Temperatur ausserhalb Normbereich - Alarm ausloesen"
+            conditions:
+              - condition: template
+                value_template: >-
+                  {{ (trigger_value | float > temp_max | float) or
+                     (trigger_value | float < temp_min | float) }}
+              - condition: template
+                value_template: "{{ not is_temp_alarm_active }}"
+            sequence:
+              # Set alarm boolean
+              - action: input_boolean.turn_on
+                target:
+                  entity_id: !input temp_alarm_boolean
+              # -- Custom Actions --
+              - choose:
+                - conditions:
+                    - "{{ temp_alarm_include_custom_actions == 'enabled' }}"
+                  sequence: !input temp_alarm_custom_actions
+              # -- Device Notification --
+              - choose:
+                - alias: "Temp Alarm - Geraete-Benachrichtigung"
+                  conditions:
+                    - "{{ temp_alarm_include_device_notify == 'enabled' }}"
+                    - "{{ temp_alarm_notify_device | length > 0 }}"
+                  sequence:
+                    - repeat:
+                        for_each: !input temp_alarm_notify_device
+                        sequence:
+                          - choose:
+                            - alias: "Ohne Action Buttons"
+                              conditions:
+                                - "{{ temp_alarm_notify_action_buttons == 'disabled' }}"
+                              sequence:
+                                - action: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
+                                  data:
+                                    title: "{{ temp_alarm_notify_title }}"
+                                    message: "{{ temp_alarm_notify_message }}"
+                                    data: "{{ temp_alarm_device_message_data }}"
+                                  continue_on_error: true
+                            - alias: "Mit Action Buttons"
+                              conditions:
+                                - "{{ temp_alarm_notify_action_buttons != 'disabled' }}"
+                              sequence:
+                                - action: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
+                                  data:
+                                    title: "{{ temp_alarm_notify_title }}"
+                                    message: "{{ temp_alarm_notify_message }}"
+                                    data: "{{ temp_alarm_device_message_data_action_button }}"
+                                  continue_on_error: true
+              # -- UI Notification --
+              - choose:
+                - alias: "Temp Alarm - UI-Benachrichtigung"
+                  conditions:
+                    - "{{ temp_alarm_include_ui_notify == 'enabled' }}"
+                  sequence:
+                    - action: persistent_notification.create
+                      data:
+                        title: "{{ temp_alarm_ui_notify_title }}"
+                        message: "{{ temp_alarm_ui_notify_message }}"
+                        notification_id: "{{ temp_alarm_ui_notify_id if temp_alarm_ui_notify_id != [] else '' }}"
+              # -- Dashboard Notification --
+              - choose:
+                - alias: "Temp Alarm - Dashboard-Benachrichtigung"
+                  conditions:
+                    - "{{ temp_alarm_include_dashboard_notify == 'enabled' }}"
+                  sequence:
+                    - action: input_text.set_value
+                      target:
+                        entity_id: !input temp_alarm_dashboard_text_helper
+                      data:
+                        value: "{{ now().strftime('%d.%m.%Y %H:%M') }} - {{ temp_alarm_notify_message[:220] }}"
+              # -- To-Do --
+              - choose:
+                - alias: "Temp Alarm - To-Do Eintrag"
+                  conditions:
+                    - "{{ temp_alarm_include_todo == 'enabled' }}"
+                  sequence:
+                    - action: todo.add_item
+                      data:
+                        item: "{{ temp_alarm_todo_title }}"
+                        description: "{{ temp_alarm_notify_message }}"
+                      target:
+                        entity_id: !input temp_alarm_todo_list
+              # -- Action Button Wait --
+              - choose:
+                - alias: "Temp Alarm - Action Buttons warten"
+                  conditions:
+                    - "{{ temp_alarm_include_device_notify == 'enabled' }}"
+                    - "{{ temp_alarm_notify_action_buttons != 'disabled' }}"
+                    - "{{ temp_alarm_notify_device | length > 0 }}"
+                  sequence:
+                    - wait_for_trigger:
+                        - trigger: event
+                          event_type: mobile_app_notification_action
+                          event_data:
+                            action: "{{ temp_alarm_action_button_todo }}"
+                        - trigger: event
+                          event_type: mobile_app_notification_action
+                          event_data:
+                            action: "{{ temp_alarm_action_button_cancel }}"
+                    - choose:
+                      - alias: "Action Button gedrueckt"
+                        conditions:
+                          - "{{ wait.trigger is defined and wait.trigger.idx is defined }}"
+                        sequence:
+                          - choose:
+                            - conditions: "{{ wait.trigger.event.data.action == temp_alarm_action_button_todo }}"
+                              sequence:
+                                - action: todo.add_item
+                                  data:
+                                    item: "{{ temp_alarm_todo_title }}"
+                                    description: "{{ temp_alarm_notify_message }}"
+                                  target:
+                                    entity_id: !input temp_alarm_todo_list
+                                - choose:
+                                  - conditions:
+                                      - "{{ temp_alarm_notify_action_buttons == 'enable_todo_button_confirmation' }}"
+                                    sequence:
+                                      - repeat:
+                                          for_each: !input temp_alarm_notify_device
+                                          sequence:
+                                            - action: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
+                                              data:
+                                                title: "{{ temp_alarm_action_button_confirmation_title }}"
+                                                message: "{{ temp_alarm_action_button_confirmation_message }}"
+                                                data: "{{ temp_alarm_device_message_data }}"
+                                              continue_on_error: true
+                                  - conditions:
+                                      - "{{ temp_alarm_notify_action_buttons == 'enable_todo_button_clear' }}"
+                                    sequence:
+                                      - repeat:
+                                          for_each: !input temp_alarm_notify_device
+                                          sequence:
+                                            - action: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
+                                              data:
+                                                message: clear_notification
+                                                data:
+                                                  tag: "{{ temp_alarm_notify_tag }}"
+                                              continue_on_error: true
+                            - conditions: "{{ wait.trigger.event.data.action == temp_alarm_action_button_cancel }}"
+                              sequence:
+                                - choose:
+                                  - conditions:
+                                      - "{{ temp_alarm_notify_action_buttons == 'enable_todo_button_confirmation' }}"
+                                    sequence:
+                                      - repeat:
+                                          for_each: !input temp_alarm_notify_device
+                                          sequence:
+                                            - action: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
+                                              data:
+                                                title: "{{ temp_alarm_action_button_confirmation_title }}"
+                                                message: "{{ temp_alarm_cancel_button_confirmation_message }}"
+                                                data: "{{ temp_alarm_device_message_data }}"
+                                              continue_on_error: true
+                                  - conditions:
+                                      - "{{ temp_alarm_notify_action_buttons == 'enable_todo_button_clear' }}"
+                                    sequence:
+                                      - repeat:
+                                          for_each: !input temp_alarm_notify_device
+                                          sequence:
+                                            - action: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
+                                              data:
+                                                message: clear_notification
+                                                data:
+                                                  tag: "{{ temp_alarm_notify_tag }}"
+                                              continue_on_error: true
+
+          # -- TEMPERATUR-ENTWARNUNG: Alle Sensoren wieder im Bereich --
+          - alias: "Temperatur wieder im Normbereich - Entwarnung"
+            conditions:
+              - condition: template
+                value_template: >-
+                  {{ (trigger_value | float <= temp_clear_max | float) and
+                     (trigger_value | float >= temp_clear_min | float) }}
+              - condition: template
+                value_template: "{{ is_temp_alarm_active }}"
+              - condition: template
+                value_template: "{{ all_temp_in_range }}"
+            sequence:
+              # Clear alarm boolean
+              - action: input_boolean.turn_off
+                target:
+                  entity_id: !input temp_alarm_boolean
+              # -- Custom Actions --
+              - choose:
+                - conditions:
+                    - "{{ temp_clear_include_custom_actions == 'enabled' }}"
+                  sequence: !input temp_clear_custom_actions
+              # -- Device Notification --
+              - choose:
+                - alias: "Temp Entwarnung - Geraete-Benachrichtigung"
+                  conditions:
+                    - "{{ temp_clear_include_device_notify == 'enabled' }}"
+                    - "{{ temp_clear_notify_device | length > 0 }}"
+                  sequence:
+                    - repeat:
+                        for_each: !input temp_clear_notify_device
+                        sequence:
+                          - action: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
+                            data:
+                              title: "{{ temp_clear_notify_title }}"
+                              message: "{{ temp_clear_notify_message }}"
+                              data: "{{ temp_clear_device_message_data }}"
+                            continue_on_error: true
+              # -- UI Notification --
+              - choose:
+                - alias: "Temp Entwarnung - UI-Benachrichtigung"
+                  conditions:
+                    - "{{ temp_clear_include_ui_notify == 'enabled' }}"
+                  sequence:
+                    - action: persistent_notification.create
+                      data:
+                        title: "{{ temp_clear_ui_notify_title }}"
+                        message: "{{ temp_clear_ui_notify_message }}"
+                        notification_id: "{{ temp_clear_ui_notify_id if temp_clear_ui_notify_id != [] else '' }}"
+              # -- Dashboard Notification --
+              - choose:
+                - alias: "Temp Entwarnung - Dashboard-Benachrichtigung"
+                  conditions:
+                    - "{{ temp_clear_include_dashboard_notify == 'enabled' }}"
+                  sequence:
+                    - action: input_text.set_value
+                      target:
+                        entity_id: !input temp_clear_dashboard_text_helper
+                      data:
+                        value: "{{ now().strftime('%d.%m.%Y %H:%M') }} - {{ temp_clear_notify_message[:220] }}"
+              # -- Check if suppressed humidity alarm should now fire --
+              - choose:
+                - alias: "Unterdrueckter Feuchtigkeitsalarm nachholen"
+                  conditions:
+                    - condition: template
+                      value_template: "{{ states(hum_alarm_boolean) == 'on' if hum_alarm_boolean else false }}"
+                  sequence:
+                    # Fire humidity alarm notifications now
+                    - choose:
+                      - conditions:
+                          - "{{ hum_alarm_include_custom_actions == 'enabled' }}"
+                        sequence: !input hum_alarm_custom_actions
+                    - choose:
+                      - alias: "Nachgeholter Hum Alarm - Geraete-Benachrichtigung"
+                        conditions:
+                          - "{{ hum_alarm_include_device_notify == 'enabled' }}"
+                          - "{{ hum_alarm_notify_device | length > 0 }}"
+                        sequence:
+                          - repeat:
+                              for_each: !input hum_alarm_notify_device
+                              sequence:
+                                - action: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
+                                  data:
+                                    title: "{{ hum_alarm_notify_title }}"
+                                    message: "{{ hum_alarm_notify_message }}"
+                                    data: "{{ hum_alarm_device_message_data }}"
+                                  continue_on_error: true
+                    - choose:
+                      - alias: "Nachgeholter Hum Alarm - UI-Benachrichtigung"
+                        conditions:
+                          - "{{ hum_alarm_include_ui_notify == 'enabled' }}"
+                        sequence:
+                          - action: persistent_notification.create
+                            data:
+                              title: "{{ hum_alarm_ui_notify_title }}"
+                              message: "{{ hum_alarm_ui_notify_message }}"
+                              notification_id: "{{ hum_alarm_ui_notify_id if hum_alarm_ui_notify_id != [] else '' }}"
+                    - choose:
+                      - alias: "Nachgeholter Hum Alarm - Dashboard-Benachrichtigung"
+                        conditions:
+                          - "{{ hum_alarm_include_dashboard_notify == 'enabled' }}"
+                        sequence:
+                          - action: input_text.set_value
+                            target:
+                              entity_id: !input hum_alarm_dashboard_text_helper
+                            data:
+                              value: "{{ now().strftime('%d.%m.%Y %H:%M') }} - {{ hum_alarm_notify_message[:220] }}"
+
+    # ========================================================
+    # HUMIDITY SENSOR CHANGE
+    # ========================================================
+    - alias: "Feuchtigkeitssensor hat sich geaendert"
+      conditions:
+        - condition: trigger
+          id: 'hum_change'
+      sequence:
+        - choose:
+          # -- FEUCHTIGKEITS-ALARM: Wert ausserhalb Normbereich --
+          - alias: "Feuchtigkeit ausserhalb Normbereich - Alarm ausloesen"
+            conditions:
+              - condition: template
+                value_template: >-
+                  {{ (trigger_value | float > hum_max | float) or
+                     (trigger_value | float < hum_min | float) }}
+              - condition: template
+                value_template: "{{ not is_hum_alarm_active }}"
+            sequence:
+              # Set alarm boolean
+              - action: input_boolean.turn_on
+                target:
+                  entity_id: !input hum_alarm_boolean
+              # Check priority: only notify if no temp alarm active
+              - choose:
+                - alias: "Kein Temperaturalarm aktiv - Feuchtigkeitsalarm senden"
+                  conditions:
+                    - condition: template
+                      value_template: "{{ not is_temp_alarm_active }}"
+                  sequence:
+                    # -- Custom Actions --
+                    - choose:
+                      - conditions:
+                          - "{{ hum_alarm_include_custom_actions == 'enabled' }}"
+                        sequence: !input hum_alarm_custom_actions
+                    # -- Device Notification --
+                    - choose:
+                      - alias: "Hum Alarm - Geraete-Benachrichtigung"
+                        conditions:
+                          - "{{ hum_alarm_include_device_notify == 'enabled' }}"
+                          - "{{ hum_alarm_notify_device | length > 0 }}"
+                        sequence:
+                          - repeat:
+                              for_each: !input hum_alarm_notify_device
+                              sequence:
+                                - choose:
+                                  - alias: "Ohne Action Buttons"
+                                    conditions:
+                                      - "{{ hum_alarm_notify_action_buttons == 'disabled' }}"
+                                    sequence:
+                                      - action: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
+                                        data:
+                                          title: "{{ hum_alarm_notify_title }}"
+                                          message: "{{ hum_alarm_notify_message }}"
+                                          data: "{{ hum_alarm_device_message_data }}"
+                                        continue_on_error: true
+                                  - alias: "Mit Action Buttons"
+                                    conditions:
+                                      - "{{ hum_alarm_notify_action_buttons != 'disabled' }}"
+                                    sequence:
+                                      - action: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
+                                        data:
+                                          title: "{{ hum_alarm_notify_title }}"
+                                          message: "{{ hum_alarm_notify_message }}"
+                                          data: "{{ hum_alarm_device_message_data_action_button }}"
+                                        continue_on_error: true
+                    # -- UI Notification --
+                    - choose:
+                      - alias: "Hum Alarm - UI-Benachrichtigung"
+                        conditions:
+                          - "{{ hum_alarm_include_ui_notify == 'enabled' }}"
+                        sequence:
+                          - action: persistent_notification.create
+                            data:
+                              title: "{{ hum_alarm_ui_notify_title }}"
+                              message: "{{ hum_alarm_ui_notify_message }}"
+                              notification_id: "{{ hum_alarm_ui_notify_id if hum_alarm_ui_notify_id != [] else '' }}"
+                    # -- Dashboard Notification --
+                    - choose:
+                      - alias: "Hum Alarm - Dashboard-Benachrichtigung"
+                        conditions:
+                          - "{{ hum_alarm_include_dashboard_notify == 'enabled' }}"
+                        sequence:
+                          - action: input_text.set_value
+                            target:
+                              entity_id: !input hum_alarm_dashboard_text_helper
+                            data:
+                              value: "{{ now().strftime('%d.%m.%Y %H:%M') }} - {{ hum_alarm_notify_message[:220] }}"
+                    # -- To-Do --
+                    - choose:
+                      - alias: "Hum Alarm - To-Do Eintrag"
+                        conditions:
+                          - "{{ hum_alarm_include_todo == 'enabled' }}"
+                        sequence:
+                          - action: todo.add_item
+                            data:
+                              item: "{{ hum_alarm_todo_title }}"
+                              description: "{{ hum_alarm_notify_message }}"
+                            target:
+                              entity_id: !input hum_alarm_todo_list
+                    # -- Action Button Wait --
+                    - choose:
+                      - alias: "Hum Alarm - Action Buttons warten"
+                        conditions:
+                          - "{{ hum_alarm_include_device_notify == 'enabled' }}"
+                          - "{{ hum_alarm_notify_action_buttons != 'disabled' }}"
+                          - "{{ hum_alarm_notify_device | length > 0 }}"
+                        sequence:
+                          - wait_for_trigger:
+                              - trigger: event
+                                event_type: mobile_app_notification_action
+                                event_data:
+                                  action: "{{ hum_alarm_action_button_todo }}"
+                              - trigger: event
+                                event_type: mobile_app_notification_action
+                                event_data:
+                                  action: "{{ hum_alarm_action_button_cancel }}"
+                          - choose:
+                            - alias: "Action Button gedrueckt"
+                              conditions:
+                                - "{{ wait.trigger is defined and wait.trigger.idx is defined }}"
+                              sequence:
+                                - choose:
+                                  - conditions: "{{ wait.trigger.event.data.action == hum_alarm_action_button_todo }}"
+                                    sequence:
+                                      - action: todo.add_item
+                                        data:
+                                          item: "{{ hum_alarm_todo_title }}"
+                                          description: "{{ hum_alarm_notify_message }}"
+                                        target:
+                                          entity_id: !input hum_alarm_todo_list
+                                      - choose:
+                                        - conditions:
+                                            - "{{ hum_alarm_notify_action_buttons == 'enable_todo_button_confirmation' }}"
+                                          sequence:
+                                            - repeat:
+                                                for_each: !input hum_alarm_notify_device
+                                                sequence:
+                                                  - action: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
+                                                    data:
+                                                      title: "{{ hum_alarm_action_button_confirmation_title }}"
+                                                      message: "{{ hum_alarm_action_button_confirmation_message }}"
+                                                      data: "{{ hum_alarm_device_message_data }}"
+                                                    continue_on_error: true
+                                        - conditions:
+                                            - "{{ hum_alarm_notify_action_buttons == 'enable_todo_button_clear' }}"
+                                          sequence:
+                                            - repeat:
+                                                for_each: !input hum_alarm_notify_device
+                                                sequence:
+                                                  - action: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
+                                                    data:
+                                                      message: clear_notification
+                                                      data:
+                                                        tag: "{{ hum_alarm_notify_tag }}"
+                                                    continue_on_error: true
+                                  - conditions: "{{ wait.trigger.event.data.action == hum_alarm_action_button_cancel }}"
+                                    sequence:
+                                      - choose:
+                                        - conditions:
+                                            - "{{ hum_alarm_notify_action_buttons == 'enable_todo_button_confirmation' }}"
+                                          sequence:
+                                            - repeat:
+                                                for_each: !input hum_alarm_notify_device
+                                                sequence:
+                                                  - action: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
+                                                    data:
+                                                      title: "{{ hum_alarm_action_button_confirmation_title }}"
+                                                      message: "{{ hum_alarm_cancel_button_confirmation_message }}"
+                                                      data: "{{ hum_alarm_device_message_data }}"
+                                                    continue_on_error: true
+                                        - conditions:
+                                            - "{{ hum_alarm_notify_action_buttons == 'enable_todo_button_clear' }}"
+                                          sequence:
+                                            - repeat:
+                                                for_each: !input hum_alarm_notify_device
+                                                sequence:
+                                                  - action: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
+                                                    data:
+                                                      message: clear_notification
+                                                      data:
+                                                        tag: "{{ hum_alarm_notify_tag }}"
+                                                    continue_on_error: true
+
+          # -- FEUCHTIGKEITS-ENTWARNUNG: Alle Sensoren wieder im Bereich --
+          - alias: "Feuchtigkeit wieder im Normbereich - Entwarnung"
+            conditions:
+              - condition: template
+                value_template: >-
+                  {{ (trigger_value | float <= hum_clear_max | float) and
+                     (trigger_value | float >= hum_clear_min | float) }}
+              - condition: template
+                value_template: "{{ is_hum_alarm_active }}"
+              - condition: template
+                value_template: "{{ all_hum_in_range }}"
+            sequence:
+              # Clear alarm boolean
+              - action: input_boolean.turn_off
+                target:
+                  entity_id: !input hum_alarm_boolean
+              # Only send clear notifications if no temp alarm is active
+              - choose:
+                - alias: "Kein Temperaturalarm aktiv - Entwarnung senden"
+                  conditions:
+                    - condition: template
+                      value_template: "{{ not is_temp_alarm_active }}"
+                  sequence:
+                    # -- Custom Actions --
+                    - choose:
+                      - conditions:
+                          - "{{ hum_clear_include_custom_actions == 'enabled' }}"
+                        sequence: !input hum_clear_custom_actions
+                    # -- Device Notification --
+                    - choose:
+                      - alias: "Hum Entwarnung - Geraete-Benachrichtigung"
+                        conditions:
+                          - "{{ hum_clear_include_device_notify == 'enabled' }}"
+                          - "{{ hum_clear_notify_device | length > 0 }}"
+                        sequence:
+                          - repeat:
+                              for_each: !input hum_clear_notify_device
+                              sequence:
+                                - action: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
+                                  data:
+                                    title: "{{ hum_clear_notify_title }}"
+                                    message: "{{ hum_clear_notify_message }}"
+                                    data: "{{ hum_clear_device_message_data }}"
+                                  continue_on_error: true
+                    # -- UI Notification --
+                    - choose:
+                      - alias: "Hum Entwarnung - UI-Benachrichtigung"
+                        conditions:
+                          - "{{ hum_clear_include_ui_notify == 'enabled' }}"
+                        sequence:
+                          - action: persistent_notification.create
+                            data:
+                              title: "{{ hum_clear_ui_notify_title }}"
+                              message: "{{ hum_clear_ui_notify_message }}"
+                              notification_id: "{{ hum_clear_ui_notify_id if hum_clear_ui_notify_id != [] else '' }}"
+                    # -- Dashboard Notification --
+                    - choose:
+                      - alias: "Hum Entwarnung - Dashboard-Benachrichtigung"
+                        conditions:
+                          - "{{ hum_clear_include_dashboard_notify == 'enabled' }}"
+                        sequence:
+                          - action: input_text.set_value
+                            target:
+                              entity_id: !input hum_clear_dashboard_text_helper
+                            data:
+                              value: "{{ now().strftime('%d.%m.%Y %H:%M') }} - {{ hum_clear_notify_message[:220] }}"
