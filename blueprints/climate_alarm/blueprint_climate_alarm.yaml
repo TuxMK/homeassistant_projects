@@ -2094,7 +2094,7 @@ action:
               - choose:
                 - alias: "Temp Alarm - Action Buttons warten"
                   conditions:
-                    - "{{ temp_alarm_include_device_notify == 'enabled' }}"
+                    - "{{ temp_alarm_include_device_notify == 'enabled' or temp_alarm_include_notify_all == 'enabled' or temp_alarm_include_html5_notify == 'enabled' }}"
                     - "{{ temp_alarm_notify_action_buttons != 'disabled' or alarm_active_helper not in [[], '', none] }}"
                     - "{{ (temp_alarm_notify_device | length > 0) or (temp_alarm_notify_entities | length > 0) or temp_alarm_include_notify_all == 'enabled' or temp_alarm_include_html5_notify == 'enabled' }}"
                   sequence:
@@ -2381,7 +2381,7 @@ action:
                     - choose:
                       - conditions:
                           - "{{ alarm_active_helper not in [[], '', none] }}"
-                          - "{{ hum_alarm_include_device_notify == 'enabled' }}"
+                          - "{{ hum_alarm_include_device_notify == 'enabled' or hum_alarm_include_notify_all == 'enabled' or hum_alarm_include_html5_notify == 'enabled' }}"
                           - "{{ (hum_alarm_notify_device | length > 0) or (hum_alarm_notify_entities | length > 0) or hum_alarm_include_notify_all == 'enabled' or hum_alarm_include_html5_notify == 'enabled' }}"
                         sequence:
                           - wait_for_trigger:
@@ -2606,7 +2606,7 @@ action:
                     - choose:
                       - alias: "Hum Alarm - Action Buttons warten"
                         conditions:
-                          - "{{ hum_alarm_include_device_notify == 'enabled' }}"
+                          - "{{ hum_alarm_include_device_notify == 'enabled' or hum_alarm_include_notify_all == 'enabled' or hum_alarm_include_html5_notify == 'enabled' }}"
                           - "{{ hum_alarm_notify_action_buttons != 'disabled' or alarm_active_helper not in [[], '', none] }}"
                           - "{{ (hum_alarm_notify_device | length > 0) or (hum_alarm_notify_entities | length > 0) or hum_alarm_include_notify_all == 'enabled' or hum_alarm_include_html5_notify == 'enabled' }}"
                         sequence:
