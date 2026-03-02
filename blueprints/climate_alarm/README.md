@@ -38,6 +38,8 @@ Dieser Blueprint ueberwacht ausgewaehlte Temperatur- und Feuchtigkeitssensoren i
 - **Benachrichtigungsoptionen** (je Aktion)
   - Device Push-Benachrichtigungen (iOS/Android)
   - Notify-Entity-Auswahl (Gruppen, individuelle Entities)
+  - Senden an alle Geraete (notify.notify)
+  - HTML5 Browser Push-Benachrichtigungen (notify.html5)
   - UI-Benachrichtigungen (persistent_notification)
   - Dashboard-Anzeige via Text Helper
   - iOS: Interruption Level, Custom Sounds
