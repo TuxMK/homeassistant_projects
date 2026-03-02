@@ -179,6 +179,14 @@ blueprint:
             entity:
               filter:
                 domain: input_boolean
+        silence_button_title:
+          name: "Silence Button Title"
+          description: >
+            Title for the 'Silence Alarm' action button in push notifications.
+            Only shown when an Acoustic Alarm Helper is configured above.
+          default: "Silence Alarm"
+          selector:
+            text:
 
     # ============================================================
     # TEMPERATURE ALARM NOTIFICATIONS
@@ -1443,6 +1451,7 @@ variables:
   temp_hysteresis: !input temp_hysteresis
   hum_hysteresis: !input hum_hysteresis
   alarm_active_helper: !input alarm_active_helper
+  silence_button_title: !input silence_button_title
 
   # Hysteresis-adjusted thresholds for all-clear
   temp_clear_min: "{{ (temp_min | float) + (temp_hysteresis | float) }}"
@@ -1687,7 +1696,7 @@ variables:
       {% set message.data = dict(message.data, **{ 'tag': temp_alarm_notify_tag }) %}
     {% endif %}
     {% if alarm_active_helper not in [[], '', none] %}
-      {% set actions = [{'action': 'SILENCE_ALARM', 'title': 'Silence Alarm'}] %}
+      {% set actions = [{'action': 'SILENCE_ALARM', 'title': silence_button_title}] %}
       {% set message.data = dict(message.data, **{ 'actions': actions }) %}
     {% endif %}
     {{ message.data }}
@@ -1728,7 +1737,7 @@ variables:
       {'action': temp_alarm_action_button_cancel, 'title': temp_alarm_action_button_cancel}
     ] %}
     {% if alarm_active_helper not in [[], '', none] %}
-      {% set actions = actions + [{'action': 'SILENCE_ALARM', 'title': 'Silence Alarm'}] %}
+      {% set actions = actions + [{'action': 'SILENCE_ALARM', 'title': silence_button_title}] %}
     {% endif %}
     {% set message.data = dict(message.data, **{ 'actions': actions }) %}
     {{ message.data }}
@@ -1798,7 +1807,7 @@ variables:
       {% set message.data = dict(message.data, **{ 'tag': hum_alarm_notify_tag }) %}
     {% endif %}
     {% if alarm_active_helper not in [[], '', none] %}
-      {% set actions = [{'action': 'SILENCE_ALARM', 'title': 'Silence Alarm'}] %}
+      {% set actions = [{'action': 'SILENCE_ALARM', 'title': silence_button_title}] %}
       {% set message.data = dict(message.data, **{ 'actions': actions }) %}
     {% endif %}
     {{ message.data }}
@@ -1839,7 +1848,7 @@ variables:
       {'action': hum_alarm_action_button_cancel, 'title': hum_alarm_action_button_cancel}
     ] %}
     {% if alarm_active_helper not in [[], '', none] %}
-      {% set actions = actions + [{'action': 'SILENCE_ALARM', 'title': 'Silence Alarm'}] %}
+      {% set actions = actions + [{'action': 'SILENCE_ALARM', 'title': silence_button_title}] %}
     {% endif %}
     {% set message.data = dict(message.data, **{ 'actions': actions }) %}
     {{ message.data }}
