@@ -6,8 +6,8 @@ blueprint:
     **Version: 1.0**
 
 
-    Monitor entities that haven't reported updates for a configurable time period.
-    Detect stale sensors by domain categories or individual selection.
+    Warns you when entities have stopped reporting values for a configurable time period (hours/days).
+    Detects silent failures automatically by domain categories (Environment, Security, Energy, Battery) or individual entity selection.
 
 
     <details>
@@ -32,7 +32,6 @@ blueprint:
         - Opt to send messages to one or multiple devices.
         - Opt to display your notifications directly within the Home Assistant user interface (UI).
         - Opt to display your staleness alerts and status on a dashboard.
-        - Opt to receive a confirmation message if all entities are okay.
         - Opt to use action buttons in your device notification that allows you to add your stale entities to a To-Do list.
         - Compatible with Apple iOS and Android devices.
 
@@ -276,7 +275,6 @@ blueprint:
           name: Use The Easy Notify - Device Notification Options (Optional)
           description: >
             Enabling this option will send notifications to the selected devices below.
-            You can also opt to receive a confirmation message if all entities are okay.
 
 
             To customize your automation further or integrate with voice assistants such as The Voice (HA), Google Assistant, Alexa, or TTS, check out the custom action options below.
@@ -286,8 +284,6 @@ blueprint:
               options:
                 - label: Enable Device Notification
                   value: "enable_easy_notify"
-                - label: Enable Device Notification + Okay Confirmation Message
-                  value: "enable_easy_okay_notify"
                 - label: Disable Device Notification
                   value: "disabled_easy_notify"
         notify_device:
@@ -307,11 +303,12 @@ blueprint:
           default: Entity Staleness Notification
           selector:
             text:
-        notify_okay_message:
-          name: Okay Confirmation Message
+        notify_message_header:
+          name: Message Header
           description: >
-            Enter in the notification message you would like to receive when all your entities are okay.
-          default: All entities are reporting normally :)
+            Enter the header text shown before the list of stale entities.
+            Use `{{hours}}` as placeholder for the configured threshold.
+          default: "The following entities have not reported for {{hours}} hours:"
           selector:
             text:
         notify_tag:
@@ -506,7 +503,6 @@ blueprint:
           name: Use The Easy Notify - UI Notification Options (Optional)
           description: >
             Enabling this option will display notifications directly within the Home Assistant user interface (UI).
-            You can also opt to receive a confirmation message in the UI if all entities are okay.
 
 
             To customize your automation further or integrate with voice assistants such as The Voice (HA), Google Assistant, Alexa, or TTS, check out the custom action options below.
@@ -516,8 +512,6 @@ blueprint:
               options:
                 - label: Enable UI Notification
                   value: "enable_persistent_notification"
-                - label: Enable UI Notification + Okay Confirmation Message
-                  value: "enable_persistent_okay_notification"
                 - label: Disable UI Notification
                   value: "disabled_persistent_notification"
         persistent_notify_title:
@@ -525,13 +519,6 @@ blueprint:
           description: >
             Enter in the notification title of your message.
           default: Entity Staleness Notification
-          selector:
-            text:
-        persistent_notify_okay_message:
-          name: Okay Confirmation Message
-          description: >
-            Enter in the notification message you would like to receive when all your entities are okay.
-          default: All entities are reporting normally :)
           selector:
             text:
         persistent_notify_id:
@@ -561,8 +548,8 @@ blueprint:
           selector:
             select:
               options:
-                - label: Enable Dashboard Notification + Okay Confirmation Message
-                  value: "enable_dashboard_okay_notification"
+                - label: Enable Dashboard Notification
+                  value: "enable_dashboard_notification"
                 - label: Disable Dashboard Notification
                   value: "disabled_dashboard_notification"
         dashboard_notification_text_helper:
@@ -578,13 +565,6 @@ blueprint:
             entity:
               filter:
                 domain: input_text
-        dashboard_notify_okay_message:
-          name: Okay Confirmation Message
-          description: >
-            Enter in the notification message you would like to receive when all your entities are okay.
-          default: All entities are reporting normally :)
-          selector:
-            text:
     custom_actions_settings:
       name: "Custom Actions"
       icon: mdi:code-tags
@@ -654,7 +634,7 @@ variables:
   include_easy_notify: !input include_easy_notify
   notify_device: !input notify_device
   notify_title: !input notify_title
-  notify_okay_message: !input notify_okay_message
+  notify_message_header: !input notify_message_header
   notify_tag: !input notify_tag
   notify_interruption_level: !input notify_interruption_level
   notify_sound: !input notify_sound
@@ -672,11 +652,9 @@ variables:
   cancel_action_button_confirmation_message: !input cancel_action_button_confirmation_message
   include_persistent_notification: !input include_persistent_notification
   persistent_notify_title: !input persistent_notify_title
-  persistent_notify_okay_message: !input persistent_notify_okay_message
   persistent_notify_id: !input persistent_notify_id
   include_dashboard_notification: !input include_dashboard_notification
   dashboard_notification_text_helper: !input dashboard_notification_text_helper
-  dashboard_notify_okay_message: !input dashboard_notify_okay_message
   include_custom_actions: !input include_custom_actions
   custom_actions: !input custom_actions
   global_conditions: !input global_conditions
@@ -1064,11 +1042,23 @@ variables:
 
 # Easy notify message variables
 
+  formatted_hours: >-
+    {{ staleness_hours | int if staleness_hours == (staleness_hours | int) else staleness_hours }}
+
+  formatted_header: >-
+    {{ notify_message_header | replace('{{hours}}', formatted_hours | string) }}
+
   easy_notify_message: >-
+    {% if stale_sensors != '' %}
+    {{ formatted_header }}
     {{ stale_sensors | replace(', ', '\n') }}
+    {% endif %}
 
   persistent_easy_notify_message: >-
+    {% if stale_sensors != '' %}
+    {{ formatted_header }}
     {{ stale_sensors | replace(', ', '\n') }}
+    {% endif %}
 
   persistent_message_data: >-
     {% set message = namespace(data={}) %}
@@ -1078,16 +1068,10 @@ variables:
     {% endif %}
     {{ message.data }}
 
-  persistent_okay_message_data: >-
-    {% set message = namespace(data={}) %}
-    {% set message.data = dict(message.data, title=persistent_notify_title, message=persistent_notify_okay_message) %}
-    {% if persistent_notify_id != [] %}
-      {% set message.data = dict(message.data, **{ 'notification_id': persistent_notify_id }) %}
-    {% endif %}
-    {{ message.data }}
-
   dashboard_easy_notify_message: >-
-    {{ stale_sensors | replace(', ', '\n') }}
+    {% if stale_sensors != '' %}
+    {{ formatted_header }} {{ stale_sensors }}
+    {% endif %}
 
 triggers:
   - trigger: state
@@ -1140,102 +1124,66 @@ action:
     - alias: "Use the easy notify device options"
       conditions:
         - condition: template
-          value_template: "{{ (include_easy_notify == 'enable_easy_notify') or (include_easy_notify == 'enable_easy_okay_notify') }}"
+          value_template: "{{ include_easy_notify == 'enable_easy_notify' }}"
         - condition: template
           value_template: "{{ notify_device | length > 0 }}"
+        - condition: template
+          value_template: "{{ easy_notify_message != '' }}"
       sequence:
         - alias: "Send a notification to each device"
           repeat:
             for_each: !input notify_device
             sequence:
               - choose:
-                - alias: "Stale entities have been found"
+                - alias: "Easy notify with no action button"
                   conditions:
-                    - "{{ easy_notify_message != '' }}"
-                  sequence:
-                    - choose:
-                      - alias: "Easy notify with no action button"
-                        conditions:
-                          - "{{ notify_action_buttons == 'disabled_notify_action_buttons' }}"
-                        sequence:
-                          - action: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
-                            data:
-                              title: !input notify_title
-                              message: "{{easy_notify_message}}"
-                              data: "{{ device_message_data }}"
-                            continue_on_error: true
-                      - alias: "Easy notify with action button"
-                        conditions:
-                          - "{{ notify_action_buttons != 'disabled_notify_action_buttons' }}"
-                        sequence:
-                          - action: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
-                            data:
-                              title: !input notify_title
-                              message: "{{easy_notify_message}}"
-                              data: "{{ device_message_data_action_button }}"
-                            continue_on_error: true
-                - alias: "No stale entities have been found"
-                  conditions:
-                    - "{{ easy_notify_message == '' }}"
-                    - "{{ include_easy_notify == 'enable_easy_okay_notify' }}"
+                    - "{{ notify_action_buttons == 'disabled_notify_action_buttons' }}"
                   sequence:
                     - action: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
                       data:
                         title: !input notify_title
-                        message: !input notify_okay_message
+                        message: "{{easy_notify_message}}"
                         data: "{{ device_message_data }}"
+                      continue_on_error: true
+                - alias: "Easy notify with action button"
+                  conditions:
+                    - "{{ notify_action_buttons != 'disabled_notify_action_buttons' }}"
+                  sequence:
+                    - action: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
+                      data:
+                        title: !input notify_title
+                        message: "{{easy_notify_message}}"
+                        data: "{{ device_message_data_action_button }}"
                       continue_on_error: true
   - choose:
     - alias: "Use the easy notify persistent notification options"
       conditions:
         - condition: template
-          value_template: "{{ (include_persistent_notification == 'enable_persistent_notification') or (include_persistent_notification == 'enable_persistent_okay_notification') }}"
+          value_template: "{{ include_persistent_notification == 'enable_persistent_notification' }}"
+        - condition: template
+          value_template: "{{ persistent_easy_notify_message != '' }}"
       sequence:
-        - choose:
-          - alias: "Stale entities have been found"
-            conditions:
-              - "{{ persistent_easy_notify_message != '' }}"
-            sequence:
-              - action: persistent_notification.create
-                data: "{{ persistent_message_data }}"
-          - alias: "No stale entities have been found"
-            conditions:
-              - "{{ persistent_easy_notify_message == '' }}"
-              - "{{ include_persistent_notification == 'enable_persistent_okay_notification' }}"
-            sequence:
-              - action: persistent_notification.create
-                data: "{{ persistent_okay_message_data }}"
+        - action: persistent_notification.create
+          data: "{{ persistent_message_data }}"
   - choose:
     - alias: "Use the easy notify dashboard notification options"
       conditions:
         - condition: template
           value_template: >
-            {{ include_dashboard_notification == 'enable_dashboard_okay_notification' }}
+            {{ include_dashboard_notification == 'enable_dashboard_notification' }}
+        - condition: template
+          value_template: "{{ dashboard_easy_notify_message != '' }}"
       sequence:
-        - choose:
-          - alias: "Stale entities have been found"
-            conditions:
-              - "{{ dashboard_easy_notify_message != '' }}"
-            sequence:
-              - action: input_text.set_value
-                target:
-                  entity_id: !input dashboard_notification_text_helper
-                data_template:
-                  value: "{{ now().strftime('%d %b %Y') }} - {{ now().strftime('%I')|int }}:{{ now().strftime('%M %p') ~ '\n\n' ~ dashboard_easy_notify_message[:228] }}"
-          - alias: "No stale entities have been found"
-            conditions:
-              - "{{ dashboard_easy_notify_message == '' }}"
-            sequence:
-              - action: input_text.set_value
-                target:
-                  entity_id: !input dashboard_notification_text_helper
-                data_template:
-                  value: "{{ now().strftime('%d %b %Y') }} - {{ now().strftime('%I')|int }}:{{ now().strftime('%M %p') ~ '\n\n' ~ dashboard_notify_okay_message[:228] }}"
+        - action: input_text.set_value
+          target:
+            entity_id: !input dashboard_notification_text_helper
+          data_template:
+            value: "{{ now().strftime('%d %b %Y') }} - {{ now().strftime('%I')|int }}:{{ now().strftime('%M %p') ~ '\n\n' ~ dashboard_easy_notify_message[:228] }}"
   - choose:
     - alias: "Check if the easy notify - device To-Do action button is enabled"
       conditions:
         - condition: template
-          value_template: "{{ (include_easy_notify == 'enable_easy_notify') or (include_easy_notify == 'enable_easy_okay_notify') }}"
+          value_template: "{{ include_easy_notify == 'enable_easy_notify' }}"
         - condition: template
           value_template: "{{(notify_action_buttons == 'enable_to_do_list_button') or (notify_action_buttons == 'enable_to_do_list_button_and_confirmation') or (notify_action_buttons == 'enable_to_do_list_button_and_clear')}}"
         - condition: template
