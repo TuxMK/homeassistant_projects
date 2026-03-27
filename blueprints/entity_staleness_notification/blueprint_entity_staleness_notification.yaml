@@ -205,7 +205,7 @@ blueprint:
             **The fields will be reported in this format**
 
 
-            `Friendly Name {Floor} (Area) [Device] - Entity ID | 3h 45m ago`
+            `Friendly Name {Floor} (Area) [Device] - Entity ID | 3h 45m`
 
 
             ***Note** - If many entities are stale, selecting all fields may make your notifications very long.
@@ -521,6 +521,14 @@ blueprint:
           default: Entity Staleness Notification
           selector:
             text:
+        persistent_notify_message_header:
+          name: Message Header
+          description: >
+            Enter the header text shown before the list of stale entities.
+            Use `{{hours}}` as placeholder for the configured threshold.
+          default: "The following entities have not reported for {{hours}} hours:"
+          selector:
+            text:
         persistent_notify_id:
           name: Notification ID
           description: >
@@ -565,6 +573,17 @@ blueprint:
             entity:
               filter:
                 domain: input_text
+        dashboard_notify_message_header:
+          name: Message Header
+          description: >
+            Enter the header text shown before the list of stale entities.
+            Use `{{hours}}` as placeholder for the configured threshold.
+
+
+            ***Note** - Keep this short due to the 255 character limit of text helpers.*
+          default: "Not reporting ({{hours}}h):"
+          selector:
+            text:
     custom_actions_settings:
       name: "Custom Actions"
       icon: mdi:code-tags
@@ -652,9 +671,11 @@ variables:
   cancel_action_button_confirmation_message: !input cancel_action_button_confirmation_message
   include_persistent_notification: !input include_persistent_notification
   persistent_notify_title: !input persistent_notify_title
+  persistent_notify_message_header: !input persistent_notify_message_header
   persistent_notify_id: !input persistent_notify_id
   include_dashboard_notification: !input include_dashboard_notification
   dashboard_notification_text_helper: !input dashboard_notification_text_helper
+  dashboard_notify_message_header: !input dashboard_notify_message_header
   include_custom_actions: !input include_custom_actions
   custom_actions: !input custom_actions
   global_conditions: !input global_conditions
@@ -911,9 +932,9 @@ variables:
               {% set hours = ((age_seconds % 86400) // 3600) | int %}
               {% set minutes = ((age_seconds % 3600) // 60) | int %}
               {% if days > 0 %}
-                {% set time_text = '| ' ~ days ~ 'd ' ~ hours ~ 'h ago' %}
+                {% set time_text = '| ' ~ days ~ 'd ' ~ hours ~ 'h' %}
               {% else %}
-                {% set time_text = '| ' ~ hours ~ 'h ' ~ minutes ~ 'm ago' %}
+                {% set time_text = '| ' ~ hours ~ 'h ' ~ minutes ~ 'm' %}
               {% endif %}
             {% else %}
               {% set time_text = '' %}
@@ -1045,18 +1066,24 @@ variables:
   formatted_hours: >-
     {{ staleness_hours | int if staleness_hours == (staleness_hours | int) else staleness_hours }}
 
-  formatted_header: >-
+  formatted_device_header: >-
     {{ notify_message_header | replace('{{hours}}', formatted_hours | string) }}
+
+  formatted_persistent_header: >-
+    {{ persistent_notify_message_header | replace('{{hours}}', formatted_hours | string) }}
+
+  formatted_dashboard_header: >-
+    {{ dashboard_notify_message_header | replace('{{hours}}', formatted_hours | string) }}
 
   easy_notify_message: >-
     {% if stale_sensors != '' %}
-    {{ formatted_header }}
+    {{ formatted_device_header }}
     {{ stale_sensors | replace(', ', '\n') }}
     {% endif %}
 
   persistent_easy_notify_message: >-
     {% if stale_sensors != '' %}
-    {{ formatted_header }}
+    {{ formatted_persistent_header }}
     {{ stale_sensors | replace(', ', '\n') }}
     {% endif %}
 
@@ -1070,7 +1097,7 @@ variables:
 
   dashboard_easy_notify_message: >-
     {% if stale_sensors != '' %}
-    {{ formatted_header }} {{ stale_sensors }}
+    {{ formatted_dashboard_header }} {{ stale_sensors }}
     {% endif %}
 
 triggers:
