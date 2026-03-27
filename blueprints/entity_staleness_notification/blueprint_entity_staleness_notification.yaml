@@ -1,0 +1,1365 @@
+blueprint:
+  name: Entity Staleness Notifications & Actions
+  description: >
+    # Entity Staleness Notifications & Actions
+
+    **Version: 1.0**
+
+
+    Monitor entities that haven't reported updates for a configurable time period.
+    Detect stale sensors by domain categories or individual selection.
+
+
+    <details>
+    <summary><b>The Automation Process:</b></summary>
+
+      - **Trigger Options:**
+        - **Button Helper:** Press a button in the user interface (UI) to check for stale entities.
+        - **Time & Day:** Automatically periodically checks for stale entities on any given time and day.
+
+      - **Staleness Detection:**
+        - Compares the current time against the entity's last update timestamp.
+        - Configurable threshold in hours (e.g., 24 = 1 day, 48 = 2 days).
+        - Entities that haven't reported within the threshold are flagged as stale.
+
+      - **Entity Selection:**
+        - Select predefined domain categories (Environment, Security, Energy, Battery) to automatically find matching entities.
+        - Add individual entities for monitoring.
+        - Exclude specific entities, areas, devices, or labels.
+        - Option to exclude unavailable/unknown or hidden entities.
+
+      - **Notification Options:**
+        - Opt to send messages to one or multiple devices.
+        - Opt to display your notifications directly within the Home Assistant user interface (UI).
+        - Opt to display your staleness alerts and status on a dashboard.
+        - Opt to receive a confirmation message if all entities are okay.
+        - Opt to use action buttons in your device notification that allows you to add your stale entities to a To-Do list.
+        - Compatible with Apple iOS and Android devices.
+
+      - **Custom Actions:**
+        - Customize actions to suit your preferences and needs, enhancing the automations functionality.
+        - Utilize custom predetermined staleness templates within the blueprint for more tailored and precise actions.
+        - Configure custom actions to include features like customizing notifications or playing announcements on platforms like The Voice (HA), Google, Alexa, TTS, etc.
+
+      - **Custom Conditions:**
+        - Enter any custom conditions to further customize the automation process.
+    </details>
+
+
+    Required = *
+  domain: automation
+  input:
+    trigger_settings:
+      name: "Triggers *"
+      icon: mdi:cog-outline
+      description: >
+        You must select at least one trigger *
+      collapsed: true
+      input:
+        include_button:
+          name: Use The Button Helper Trigger (Optional)
+          description: >
+            Select if you would like a button helper to trigger the automation.
+            This is useful if you would like to check for stale entities by pressing a button in the UI.
+          default: disable_button_trigger
+          selector:
+            select:
+              options:
+                - label: Use a button trigger
+                  value: "enable_button_trigger"
+                - label: Dont use a button trigger
+                  value: "disable_button_trigger"
+        button_entity:
+          name: Button Helper
+          description: >
+            Input your button helper.
+          default: []
+          selector:
+            entity:
+              filter:
+                domain: input_button
+        include_time:
+          name: Use The Time Trigger (Optional)
+          description: >
+            Select if you would like to use the time trigger.
+            This is useful if you would like to periodically check for stale entities on any given time and day.
+          default: time_disabled
+          selector:
+            select:
+              options:
+                - label: Enable the time options
+                  value: "time_enabled"
+                - label: Disable the time options
+                  value: "time_disabled"
+        time:
+          name: Time
+          description: >
+            Set the time you would like to run the automation.
+          default: '00:00:00'
+          selector:
+            time:
+        weekday_options:
+          name: Weekdays
+          description: >
+            Select the days of the week you would like the automation to run.
+          default:
+            - mon
+            - tue
+            - wed
+            - thu
+            - fri
+            - sat
+            - sun
+          selector:
+            select:
+              multiple: true
+              mode: list
+              options:
+                - label: Monday
+                  value: "mon"
+                - label: Tuesday
+                  value: "tue"
+                - label: Wednesday
+                  value: "wed"
+                - label: Thursday
+                  value: "thu"
+                - label: Friday
+                  value: "fri"
+                - label: Saturday
+                  value: "sat"
+                - label: Sunday
+                  value: "sun"
+    staleness_settings:
+      name: "Staleness Settings"
+      icon: mdi:clock-alert-outline
+      collapsed: true
+      input:
+        staleness_hours:
+          name: Staleness Threshold (Hours)
+          description: >
+            Enter the number of hours after which an entity is considered stale.
+            For example, enter 24 for one day, 48 for two days, 0.5 for 30 minutes.
+          default: 24
+          selector:
+            number:
+              min: 0.5
+              max: 720
+              step: 0.5
+              unit_of_measurement: hours
+              mode: box
+        domain_categories:
+          name: Domain Categories
+          description: >
+            Select predefined entity categories to monitor.
+            Each category includes specific domains and device classes.
+
+
+            **Umwelt / Environment**
+
+            Sensors: temperature, humidity, pressure, CO2, CO, VOC, PM1, PM10, PM25, NO2, ozone, SO2, AQI
+
+
+            **Sicherheit / Security**
+
+            Binary sensors: door, window, motion, occupancy, vibration, tamper, smoke, gas, safety, lock + lock domain
+
+
+            **Energie / Energy**
+
+            Sensors: energy, power, voltage, current, power_factor, frequency, apparent_power, reactive_power
+
+
+            **Batterie / Battery**
+
+            Sensors + binary sensors with device_class: battery
+          default: []
+          selector:
+            select:
+              multiple: true
+              options:
+                - label: "Umwelt / Environment"
+                  value: "environment"
+                - label: "Sicherheit / Security"
+                  value: "security"
+                - label: "Energie / Energy"
+                  value: "energy"
+                - label: "Batterie / Battery"
+                  value: "battery"
+        individual_entities:
+          name: Individual Entities (Optional)
+          description: >
+            Select individual entities to monitor for staleness,
+            in addition to those matched by domain categories above.
+            Supports entities, areas, devices, and labels.
+          default: { entity_id: [] }
+          selector:
+            target:
+              entity: {}
+        staleness_report_fields:
+          name: Report Fields
+          description: >
+            Select which fields to include when reporting stale entities.
+            You can choose multiple options, but you must select at least one.
+            It's recommended to select the **Friendly Name** option for clear identification.
+
+
+            **The fields will be reported in this format**
+
+
+            `Friendly Name {Floor} (Area) [Device] - Entity ID | 3h 45m ago`
+
+
+            ***Note** - If many entities are stale, selecting all fields may make your notifications very long.
+            Some notifications may be cut off and not show the full report.
+            It's recommended to select only the fields you need.*
+          default:
+            - friendly_name
+            - time_since_update
+          selector:
+            select:
+              options:
+                - label: Friendly Name
+                  value: "friendly_name"
+                - label: Floor
+                  value: "floor"
+                - label: Area
+                  value: "area"
+                - label: Device
+                  value: "device"
+                - label: Entity ID
+                  value: "entity_id"
+                - label: Time Since Last Update
+                  value: "time_since_update"
+              multiple: true
+        exclude_entities:
+          name: Excluded Entities (Optional)
+          description: >
+            Choose entities to exclude from staleness monitoring.
+            Supports entities, areas, devices, and labels.
+          default: { entity_id: [] }
+          selector:
+            target:
+              entity: {}
+        exclude_hidden_entities:
+          name: Exclude Hidden Entities (Optional)
+          description: >
+            Enable this option to exclude all hidden entities from monitoring.
+            This is useful if you've hidden entities you don't want included in the staleness report.
+          default: hidden_disabled
+          selector:
+            select:
+              options:
+                - label: Enable - Hidden entities will be excluded
+                  value: "hidden_enabled"
+                - label: Disable - Hidden entities will be included
+                  value: "hidden_disabled"
+        exclude_unavailable:
+          name: Exclude Unavailable/Unknown Entities (Optional)
+          description: >
+            Enable this option to exclude entities with state 'unavailable' or 'unknown'.
+            These entities may appear stale simply because they are offline.
+            Disable this if you also want to detect disconnected devices.
+          default: exclude_unavailable_enabled
+          selector:
+            select:
+              options:
+                - label: Enable - Unavailable/unknown entities will be excluded
+                  value: "exclude_unavailable_enabled"
+                - label: Disable - Unavailable/unknown entities will be included
+                  value: "exclude_unavailable_disabled"
+    easy_notify_device:
+      name: "Easy Notify - Device"
+      icon: mdi:devices
+      collapsed: true
+      input:
+        include_easy_notify:
+          name: Use The Easy Notify - Device Notification Options (Optional)
+          description: >
+            Enabling this option will send notifications to the selected devices below.
+            You can also opt to receive a confirmation message if all entities are okay.
+
+
+            To customize your automation further or integrate with voice assistants such as The Voice (HA), Google Assistant, Alexa, or TTS, check out the custom action options below.
+          default: disabled_easy_notify
+          selector:
+            select:
+              options:
+                - label: Enable Device Notification
+                  value: "enable_easy_notify"
+                - label: Enable Device Notification + Okay Confirmation Message
+                  value: "enable_easy_okay_notify"
+                - label: Disable Device Notification
+                  value: "disabled_easy_notify"
+        notify_device:
+          name: Devices Notified (Optional)
+          description: >
+            If you've enabled device notifications above, please select the devices to receive the notifications.
+          default: []
+          selector:
+            device:
+              filter:
+                - integration: mobile_app
+              multiple: true
+        notify_title:
+          name: Title
+          description: >
+            Enter in the notification title of your message.
+          default: Entity Staleness Notification
+          selector:
+            text:
+        notify_okay_message:
+          name: Okay Confirmation Message
+          description: >
+            Enter in the notification message you would like to receive when all your entities are okay.
+          default: All entities are reporting normally :)
+          selector:
+            text:
+        notify_tag:
+          name: Device Notification Tag
+          description: >
+            You can use a tag to keep your notifications organized.
+            When a new notification with the same tag is sent, it replaces the old one, so you won't get cluttered with duplicates.
+
+
+            If this input is left blank, no tag will be applied and each notification will be treated as separate.
+
+
+            For best results, use short, unique tags for each automation - for example: `stale-entities`, `stale-sensors`, etc.
+          default: []
+          selector:
+            text:
+        notify_interruption_level:
+          name: Interruption Level - iOS Only
+          description: >
+            On devices running iOS 15 and later, you can configure the interruption level for your notifications to ensure they are delivered according to your preferences.
+            Choose the desired interruption level from the dropdown list.
+            Critical and time-sensitive notifications must be turned ON within the Home Assistant App, and time-sensitive notifications must be allowed in your Focus settings.
+          default: active
+          selector:
+            select:
+              mode: dropdown
+              options:
+                - label: Default
+                  value: "active"
+                - label: Critical Notifications
+                  value: "critical"
+                - label: Time Sensitive Notifications
+                  value: "time-sensitive"
+                - label: Quiet Notifications Without Waking Screen
+                  value: "passive"
+        notify_sound:
+          name: Notification Sound - iOS Only
+          description: >
+            The Home Assistant app for iOS includes built-in notification sounds, and you can import sounds from your iOS device into the app.
+            Custom sounds can also be added via iTunes or from your cloud storage.
+            When entering a sound, ensure you use the full filename, including the extension.
+          default: []
+          selector:
+            text:
+        notify_data:
+          name: Android Only Options (Optional)
+          description: >
+            **High Priority** notifications ensure that you receive important alerts immediately.
+            These notifications bypass normal delivery delays and are delivered instantly to your device.
+
+
+            **Sticky Notification** ensure that important alerts are not dismissed when selected. They remain on your notification screen until you actively clear or swipe them away, ensuring that critical information stays visible until addressed.
+
+
+            **Notification Channel** allow you to easily organize different notification settings,
+            including notification sounds, vibrations, and other device-specific features.
+            If you choose this option, please enter your desired channel name below.
+
+
+            **Icon** allows you to replace the default Home Assistant icon with one of your choice.
+            If selected, choose your preferred icon using the **Icon - Android Only** option below, and set the icon colour using **Icon Colour - Android Only**.
+          default: []
+          selector:
+            select:
+              multiple: true
+              options:
+                - label: High Priority
+                  value: "high_priority"
+                - label: Sticky Notification
+                  value: "sticky"
+                - label: Notification Channel
+                  value: "channel"
+                - label: Icon
+                  value: "icon"
+        notify_channel:
+          name: Notification Channel - Android Only
+          description: >
+            If you have chosen to use a notification channel, simply enter the name of an existing channel to apply its pre-configured settings.
+            If you don't have a channel yet, you can create a new one by entering a name here.
+            When your automation sends the first notification, it will create the channel on your device.
+            After the channel is created, you can customize its notification settings to your preference directly on your device.
+          default: []
+          selector:
+            text:
+        notify_icon:
+          name: Icon - Android Only
+          description: >
+            Select a custom icon to replace the default Home Assistant icon in the notification.
+            This setting applies only if the **Icon** option is selected in **Android Only Options** above.
+          default: "mdi:clock-alert"
+          selector:
+            icon:
+        notify_icon_colour:
+          name: Icon Colour - Android Only
+          description: >
+            Choose a colour for your custom notification icon.
+            This setting applies only if the **Icon** option is selected in **Android Only Options** above.
+          default: [255, 152, 0]
+          selector:
+            color_rgb:
+    easy_notify_device_action_buttons:
+      name: "Easy Notify - Device Action Buttons"
+      icon: mdi:gesture-tap-button
+      collapsed: true
+      input:
+        notify_action_buttons:
+          name: Easy Notify - Action Buttons (Optional)
+          description: >
+            Add interactive buttons to your **device notifications**, allowing you to send items from a staleness alert directly to one of your To-Do lists.
+
+
+            When pressing an action or cancel button, you can choose to do nothing, receive a confirmation message, or automatically clear the notification from all selected devices.
+
+
+            ***Note** - If you select **Add To-Do List Action Buttons + Clear on Action**, make sure to set the **Device Notification Tag** in the **Easy Notify - Device** section above for this option to work properly.*
+          default: disabled_notify_action_buttons
+          selector:
+            select:
+              options:
+                - label: Add To-Do List Action Buttons
+                  value: "enable_to_do_list_button"
+                - label: Add To-Do List Action Buttons + Confirmation Message
+                  value: "enable_to_do_list_button_and_confirmation"
+                - label: Add To-Do List Action Buttons + Clear on Action
+                  value: "enable_to_do_list_button_and_clear"
+                - label: Disable Action Buttons
+                  value: "disabled_notify_action_buttons"
+        to_do_list:
+          name: Easy Notify Action Buttons - To-Do List Selection
+          description: >
+            Choose the To-Do list where you'd like to add your task.
+
+
+            ***Note** - The default Shopping List is not compatible because it doesn't support task descriptions.*
+            All other To-Do lists are fully supported.
+          default: []
+          selector:
+            entity:
+              filter:
+                domain: todo
+        to_do_task_title:
+          name: Easy Notify Action Buttons - Task Title
+          description: >
+            When the action button is pressed, a new task will be added to your selected To-Do list.
+            Enter the title you'd like to use for the To-Do task.
+          default: Stale Entities To Be Checked
+          selector:
+            text:
+        action_button_to_do:
+          name: Easy Notify Action Buttons - Action Button
+          description: >
+            Specify the label for the action button that will appear in your notification.
+            When pressed, this button will add a task to your selected To-Do list.
+          default: Add To To-Do List!
+          selector:
+            text:
+        action_button_cancel:
+          name: Easy Notify Action Buttons - Cancel Button
+          description: >
+            Specify the label for the cancel button that will appear in your notification.
+            When pressed, this button cancels the task addition process.
+          default: Cancel
+          selector:
+            text:
+        action_button_confirmation_title:
+          name: Easy Notify Action Buttons - Action & Cancel Button Confirmation Title
+          description: >
+            Enter the title for the confirmation notification shown when either the action or cancel button is pressed.
+          default: Entity Staleness Confirmation
+          selector:
+            text:
+        action_button_confirmation_message:
+          name: Easy Notify Action Buttons - Action Button Confirmation Message
+          description: >
+            Enter the message for the confirmation notification shown when the action button is pressed.
+          default: Your stale entities have been added to your To-Do list
+          selector:
+            text:
+        cancel_action_button_confirmation_message:
+          name: Easy Notify Action Buttons - Cancel Button Confirmation Message
+          description: >
+            Enter the message for the confirmation notification shown when the cancel button is pressed.
+          default: Cancelled - Nothing was added to your To-Do list
+          selector:
+            text:
+    easy_notify_ui:
+      name: "Easy Notify - UI"
+      icon: mdi:bell-check-outline
+      collapsed: true
+      input:
+        include_persistent_notification:
+          name: Use The Easy Notify - UI Notification Options (Optional)
+          description: >
+            Enabling this option will display notifications directly within the Home Assistant user interface (UI).
+            You can also opt to receive a confirmation message in the UI if all entities are okay.
+
+
+            To customize your automation further or integrate with voice assistants such as The Voice (HA), Google Assistant, Alexa, or TTS, check out the custom action options below.
+          default: disabled_persistent_notification
+          selector:
+            select:
+              options:
+                - label: Enable UI Notification
+                  value: "enable_persistent_notification"
+                - label: Enable UI Notification + Okay Confirmation Message
+                  value: "enable_persistent_okay_notification"
+                - label: Disable UI Notification
+                  value: "disabled_persistent_notification"
+        persistent_notify_title:
+          name: Title
+          description: >
+            Enter in the notification title of your message.
+          default: Entity Staleness Notification
+          selector:
+            text:
+        persistent_notify_okay_message:
+          name: Okay Confirmation Message
+          description: >
+            Enter in the notification message you would like to receive when all your entities are okay.
+          default: All entities are reporting normally :)
+          selector:
+            text:
+        persistent_notify_id:
+          name: Notification ID
+          description: >
+            You can use a notification ID to keep your notifications organized.
+            When a new notification with the same notification ID is sent, it replaces the old one, so you won't get cluttered with duplicates.
+
+
+            If this input is left blank, no notification ID will be applied and each notification will be treated as separate.
+
+
+            For best results, use short, unique ID's for each automation - for example: `stale-entities`, `stale-sensors`, etc.
+          default: []
+          selector:
+            text:
+    easy_notify_dashboard:
+      name: "Easy Notify - Dashboard"
+      icon: mdi:view-dashboard-variant-outline
+      collapsed: true
+      input:
+        include_dashboard_notification:
+          name: Use The Easy Notify - Dashboard Notification Option (Optional)
+          description: >
+            Display your entity staleness alerts and status on a dashboard so everyone can easily see the latest updates at a glance.
+          default: disabled_dashboard_notification
+          selector:
+            select:
+              options:
+                - label: Enable Dashboard Notification + Okay Confirmation Message
+                  value: "enable_dashboard_okay_notification"
+                - label: Disable Dashboard Notification
+                  value: "disabled_dashboard_notification"
+        dashboard_notification_text_helper:
+          name: "Dashboard Notification - Text Helper"
+          description: >
+            Select the **Text Helper** that will store the notification message, which can then be shown on a dashboard.
+            This helper will contain both the timestamp and the message (up to 255 characters).
+
+
+            ***Note** - If there are too many stale entities, some may not be displayed.*
+          default: []
+          selector:
+            entity:
+              filter:
+                domain: input_text
+        dashboard_notify_okay_message:
+          name: Okay Confirmation Message
+          description: >
+            Enter in the notification message you would like to receive when all your entities are okay.
+          default: All entities are reporting normally :)
+          selector:
+            text:
+    custom_actions_settings:
+      name: "Custom Actions"
+      icon: mdi:code-tags
+      collapsed: true
+      input:
+        include_custom_actions:
+          name: Use The Custom Action Options (Optional)
+          description: >
+            You can add any custom actions you'd like to run when the automation is triggered.
+            This can include sending custom notifications or playing voice announcements through The Voice (HA), Google Assistant, Alexa, TTS, and more.
+          default: disabled_custom_actions
+          selector:
+            select:
+              options:
+                - label: Enable Custom Actions
+                  value: "enable_custom_actions"
+                - label: Disable Custom Actions
+                  value: "disabled_custom_actions"
+        custom_actions:
+          name: Custom Actions
+          description: >
+            Add your own custom actions to run when the automation is triggered.
+
+
+            Below are templates you can use in your actions to control how your staleness information is displayed or spoken.
+
+
+            **Stale Entity Templates**
+
+            1 - Use "{{stale_sensors}}" for all stale entities with full report fields.
+
+            2 - Use "{{stale_sensors_names}}" for stale entities - friendly name only.
+
+            3 - Use "{{stale_count}}" for the total count of stale entities.
+          default: []
+          selector:
+            action:
+    global_conditions_settings:
+      name: "Global Conditions"
+      icon: mdi:earth
+      collapsed: true
+      input:
+        global_conditions:
+          name: Global Conditions
+          description: >
+            Enter any global conditions you would like to apply to the automation.
+          default: []
+          selector:
+            condition:
+
+mode: restart
+max_exceeded: silent
+
+variables:
+  include_button: !input include_button
+  button_entity: !input button_entity
+  include_time: !input include_time
+  time: !input time
+  weekday_options: !input weekday_options
+  staleness_hours: !input staleness_hours
+  domain_categories: !input domain_categories
+  individual_entities: !input individual_entities
+  staleness_report_fields: !input staleness_report_fields
+  exclude_entities: !input exclude_entities
+  exclude_hidden_entities: !input exclude_hidden_entities
+  exclude_unavailable: !input exclude_unavailable
+  include_easy_notify: !input include_easy_notify
+  notify_device: !input notify_device
+  notify_title: !input notify_title
+  notify_okay_message: !input notify_okay_message
+  notify_tag: !input notify_tag
+  notify_interruption_level: !input notify_interruption_level
+  notify_sound: !input notify_sound
+  notify_data: !input notify_data
+  notify_channel: !input notify_channel
+  notify_icon: !input notify_icon
+  notify_icon_colour: !input notify_icon_colour
+  notify_action_buttons: !input notify_action_buttons
+  to_do_list: !input to_do_list
+  to_do_task_title: !input to_do_task_title
+  action_button_to_do: !input action_button_to_do
+  action_button_cancel: !input action_button_cancel
+  action_button_confirmation_title: !input action_button_confirmation_title
+  action_button_confirmation_message: !input action_button_confirmation_message
+  cancel_action_button_confirmation_message: !input cancel_action_button_confirmation_message
+  include_persistent_notification: !input include_persistent_notification
+  persistent_notify_title: !input persistent_notify_title
+  persistent_notify_okay_message: !input persistent_notify_okay_message
+  persistent_notify_id: !input persistent_notify_id
+  include_dashboard_notification: !input include_dashboard_notification
+  dashboard_notification_text_helper: !input dashboard_notification_text_helper
+  dashboard_notify_okay_message: !input dashboard_notify_okay_message
+  include_custom_actions: !input include_custom_actions
+  custom_actions: !input custom_actions
+  global_conditions: !input global_conditions
+
+# Excluded entities resolution (areas, devices, entities, labels, hidden)
+
+  all_exclude_entities: >-
+    {% set areas = exclude_entities.area_id if exclude_entities.area_id is defined else [] %}
+    {% if areas is string %}
+      {% set areas = [areas] %}
+    {% endif %}
+    {% set area_entities_list = areas | map('area_entities') | sum(start=[]) %}
+    {% set devices = exclude_entities.device_id if exclude_entities.device_id is defined else [] %}
+    {% if devices is string %}
+      {% set devices = [devices] %}
+    {% endif %}
+    {% set device_entities_list = devices | map('device_entities') | sum(start=[]) %}
+    {% set entity_list = exclude_entities.entity_id if exclude_entities.entity_id is defined else [] %}
+    {% if entity_list is string %}
+      {% set entity_list = [entity_list] %}
+    {% endif %}
+    {% set labels = exclude_entities.label_id if exclude_entities.label_id is defined else [] %}
+    {% if labels is string %}
+      {% set labels = [labels] %}
+    {% endif %}
+    {% set label_entities_list = labels | map('label_entities') | sum(start=[]) | unique | list %}
+    {% if exclude_hidden_entities == 'hidden_enabled' %}
+      {% set hidden_entities = states | map(attribute='entity_id') | reject('none') | select('is_hidden_entity') | unique | list %}
+    {% else %}
+      {% set hidden_entities = [] %}
+    {% endif %}
+    {% set all_exclude_entities = (area_entities_list + device_entities_list + entity_list + label_entities_list + hidden_entities) | unique | list %}
+    {{ all_exclude_entities }}
+
+# Individual entities resolution (areas, devices, entities, labels)
+
+  individual_entity_list: >-
+    {% set areas = individual_entities.area_id if individual_entities.area_id is defined else [] %}
+    {% if areas is string %}
+      {% set areas = [areas] %}
+    {% endif %}
+    {% set area_entities_list = areas | map('area_entities') | sum(start=[]) %}
+    {% set devices = individual_entities.device_id if individual_entities.device_id is defined else [] %}
+    {% if devices is string %}
+      {% set devices = [devices] %}
+    {% endif %}
+    {% set device_entities_list = devices | map('device_entities') | sum(start=[]) %}
+    {% set entity_list = individual_entities.entity_id if individual_entities.entity_id is defined else [] %}
+    {% if entity_list is string %}
+      {% set entity_list = [entity_list] %}
+    {% endif %}
+    {% set labels = individual_entities.label_id if individual_entities.label_id is defined else [] %}
+    {% if labels is string %}
+      {% set labels = [labels] %}
+    {% endif %}
+    {% set label_entities_list = labels | map('label_entities') | sum(start=[]) | unique | list %}
+    {% set individual_entity_list = (area_entities_list + device_entities_list + entity_list + label_entities_list) | unique | list %}
+    {{ individual_entity_list }}
+
+# Notify device option data
+
+  device_message_data: >-
+    {% set message = namespace(data={}) %}
+    {% set push = namespace(data={}) %}
+    {% if notify_interruption_level in ['active', 'critical', 'time-sensitive', 'passive'] %}
+      {% set push.data = dict(push.data, **{ 'interruption-level': notify_interruption_level }) %}
+    {% endif %}
+    {% if notify_sound != [] %}
+      {% set push.data = dict(push.data, **{ 'sound': notify_sound }) %}
+    {% endif %}
+    {% if push.data %}
+      {% set message.data = dict(message.data, **{ 'push': push.data }) %}
+    {% endif %}
+    {% if 'high_priority' in notify_data %}
+      {% set message.data = dict(message.data, **{ 'ttl': 0, 'priority': 'high' }) %}
+    {% endif %}
+    {% if 'channel' in notify_data %}
+      {% set message.data = dict(message.data, **{ 'channel': notify_channel }) %}
+    {% endif %}
+    {% if 'sticky' in notify_data %}
+      {% set message.data = dict(message.data, **{ 'sticky': "true" }) %}
+    {% endif %}
+    {% if 'icon' in notify_data %}
+      {% set message.data = dict(message.data, **{ 'notification_icon': notify_icon }) %}
+      {% if notify_icon_colour | length == 3 %}
+        {% set icon_colour = '#%02x%02x%02x' | format(notify_icon_colour[0], notify_icon_colour[1], notify_icon_colour[2]) %}
+        {% set message.data = dict(message.data, **{ 'color': icon_colour }) %}
+      {% endif %}
+    {% endif %}
+    {% if notify_tag != [] %}
+      {% set message.data = dict(message.data, **{ 'tag': notify_tag }) %}
+    {% endif %}
+    {{ message.data }}
+
+# Notify device option data with action buttons
+
+  device_message_data_action_button: >-
+    {% set message = namespace(data={}) %}
+    {% set push = namespace(data={}) %}
+    {% if notify_interruption_level in ['active', 'critical', 'time-sensitive', 'passive'] %}
+      {% set push.data = dict(push.data, **{ 'interruption-level': notify_interruption_level }) %}
+    {% endif %}
+    {% if notify_sound != [] %}
+      {% set push.data = dict(push.data, **{ 'sound': notify_sound }) %}
+    {% endif %}
+    {% if push.data %}
+      {% set message.data = dict(message.data, **{ 'push': push.data }) %}
+    {% endif %}
+    {% if 'high_priority' in notify_data %}
+      {% set message.data = dict(message.data, **{ 'ttl': 0, 'priority': 'high' }) %}
+    {% endif %}
+    {% if 'channel' in notify_data %}
+      {% set message.data = dict(message.data, **{ 'channel': notify_channel }) %}
+    {% endif %}
+    {% if 'sticky' in notify_data %}
+      {% set message.data = dict(message.data, **{ 'sticky': "true" }) %}
+    {% endif %}
+    {% if 'icon' in notify_data %}
+      {% set message.data = dict(message.data, **{ 'notification_icon': notify_icon }) %}
+      {% if notify_icon_colour | length == 3 %}
+        {% set icon_colour = '#%02x%02x%02x' | format(notify_icon_colour[0], notify_icon_colour[1], notify_icon_colour[2]) %}
+        {% set message.data = dict(message.data, **{ 'color': icon_colour }) %}
+      {% endif %}
+    {% endif %}
+    {% if notify_tag != [] %}
+      {% set message.data = dict(message.data, **{ 'tag': notify_tag }) %}
+    {% endif %}
+    {% set actions = [
+      {'action': action_button_to_do, 'title': action_button_to_do},
+      {'action': action_button_cancel, 'title': action_button_cancel}
+    ] %}
+      {% set message.data = dict(message.data, **{ 'actions': actions }) %}
+    {{ message.data }}
+
+# Notify device option data with confirmation links to to-do
+
+  device_confirmation_message_data: >-
+    {% set message = namespace(data={}) %}
+    {% set push = namespace(data={}) %}
+    {% if notify_interruption_level in ['active', 'critical', 'time-sensitive', 'passive'] %}
+      {% set push.data = dict(push.data, **{ 'interruption-level': notify_interruption_level }) %}
+    {% endif %}
+    {% if notify_sound != [] %}
+      {% set push.data = dict(push.data, **{ 'sound': notify_sound }) %}
+    {% endif %}
+    {% if push.data %}
+      {% set message.data = dict(message.data, **{ 'push': push.data }) %}
+    {% endif %}
+    {% if 'high_priority' in notify_data %}
+      {% set message.data = dict(message.data, **{ 'ttl': 0, 'priority': 'high' }) %}
+    {% endif %}
+    {% if 'channel' in notify_data %}
+      {% set message.data = dict(message.data, **{ 'channel': notify_channel }) %}
+    {% endif %}
+    {% if 'sticky' in notify_data %}
+      {% set message.data = dict(message.data, **{ 'sticky': "true" }) %}
+    {% endif %}
+    {% if 'icon' in notify_data %}
+      {% set message.data = dict(message.data, **{ 'notification_icon': notify_icon }) %}
+      {% if notify_icon_colour | length == 3 %}
+        {% set icon_colour = '#%02x%02x%02x' | format(notify_icon_colour[0], notify_icon_colour[1], notify_icon_colour[2]) %}
+        {% set message.data = dict(message.data, **{ 'color': icon_colour }) %}
+      {% endif %}
+    {% endif %}
+    {% if notify_tag != [] %}
+      {% set message.data = dict(message.data, **{ 'tag': notify_tag }) %}
+    {% endif %}
+      {% set message.data = dict(message.data, **{ 'url': "/todo?entity_id=" ~ to_do_list, 'clickAction': "/todo?entity_id=" ~ to_do_list }) %}
+    {{ message.data }}
+
+# Stale entities detection - full report with all fields
+
+  stale_sensors: >-
+    {% set threshold_seconds = staleness_hours * 3600 %}
+    {% set env_device_classes = ['temperature', 'humidity', 'pressure', 'atmospheric_pressure', 'carbon_dioxide', 'carbon_monoxide', 'volatile_organic_compounds', 'volatile_organic_compounds_parts', 'pm1', 'pm10', 'pm25', 'nitrogen_dioxide', 'ozone', 'sulphur_dioxide', 'aqi'] %}
+    {% set security_binary_classes = ['door', 'window', 'motion', 'occupancy', 'vibration', 'tamper', 'smoke', 'gas', 'safety', 'lock'] %}
+    {% set energy_device_classes = ['energy', 'power', 'voltage', 'current', 'power_factor', 'frequency', 'apparent_power', 'reactive_power'] %}
+    {% set battery_sensor_classes = ['battery'] %}
+    {% set battery_binary_classes = ['battery'] %}
+    {% set stale_list = namespace(sensors=[]) %}
+    {% for state in states %}
+      {% if state.entity_id not in all_exclude_entities %}
+        {% if exclude_unavailable == 'exclude_unavailable_enabled' and state.state in ['unavailable', 'unknown'] %}
+          {% continue %}
+        {% endif %}
+        {% set matched = namespace(val=false) %}
+        {% if 'environment' in domain_categories %}
+          {% if state.domain == 'sensor' and state.attributes.device_class is defined and state.attributes.device_class in env_device_classes %}
+            {% set matched.val = true %}
+          {% endif %}
+        {% endif %}
+        {% if 'security' in domain_categories %}
+          {% if state.domain == 'binary_sensor' and state.attributes.device_class is defined and state.attributes.device_class in security_binary_classes %}
+            {% set matched.val = true %}
+          {% endif %}
+          {% if state.domain == 'lock' %}
+            {% set matched.val = true %}
+          {% endif %}
+        {% endif %}
+        {% if 'energy' in domain_categories %}
+          {% if state.domain == 'sensor' and state.attributes.device_class is defined and state.attributes.device_class in energy_device_classes %}
+            {% set matched.val = true %}
+          {% endif %}
+        {% endif %}
+        {% if 'battery' in domain_categories %}
+          {% if state.domain == 'sensor' and state.attributes.device_class is defined and state.attributes.device_class in battery_sensor_classes %}
+            {% set matched.val = true %}
+          {% endif %}
+          {% if state.domain == 'binary_sensor' and state.attributes.device_class is defined and state.attributes.device_class in battery_binary_classes %}
+            {% set matched.val = true %}
+          {% endif %}
+        {% endif %}
+        {% if state.entity_id in individual_entity_list %}
+          {% set matched.val = true %}
+        {% endif %}
+        {% if matched.val %}
+          {% set age_seconds = (as_timestamp(now()) - as_timestamp(state.last_updated)) %}
+          {% if age_seconds > threshold_seconds %}
+            {% if 'friendly_name' in staleness_report_fields %}
+              {% set friendly_name_text = state.name %}
+            {% else %}
+              {% set friendly_name_text = '' %}
+            {% endif %}
+            {% if 'floor' in staleness_report_fields %}
+              {% set floor = floor_name(state.entity_id) %}
+              {% set floor_text = ' {' ~ floor ~ '}' if floor is not none else '' %}
+            {% else %}
+              {% set floor_text = '' %}
+            {% endif %}
+            {% if 'area' in staleness_report_fields %}
+              {% set area = area_name(state.entity_id) %}
+              {% set area_text = ' (' ~ area ~ ')' if area is not none else '' %}
+            {% else %}
+              {% set area_text = '' %}
+            {% endif %}
+            {% if 'device' in staleness_report_fields %}
+              {% set dev_id = device_id(state.entity_id) %}
+              {% if dev_id is not none %}
+                {% set dev_name = device_attr(dev_id, 'name_by_user') or device_attr(dev_id, 'name') %}
+                {% set device_text = ' [' ~ dev_name ~ ']' if dev_name else '' %}
+              {% else %}
+                {% set device_text = '' %}
+              {% endif %}
+            {% else %}
+              {% set device_text = '' %}
+            {% endif %}
+            {% if 'entity_id' in staleness_report_fields %}
+              {% set entity_id_text = state.entity_id %}
+            {% else %}
+              {% set entity_id_text = '' %}
+            {% endif %}
+            {% if 'time_since_update' in staleness_report_fields %}
+              {% set days = (age_seconds // 86400) | int %}
+              {% set hours = ((age_seconds % 86400) // 3600) | int %}
+              {% set minutes = ((age_seconds % 3600) // 60) | int %}
+              {% if days > 0 %}
+                {% set time_text = '| ' ~ days ~ 'd ' ~ hours ~ 'h ago' %}
+              {% else %}
+                {% set time_text = '| ' ~ hours ~ 'h ' ~ minutes ~ 'm ago' %}
+              {% endif %}
+            {% else %}
+              {% set time_text = '' %}
+            {% endif %}
+            {% set report_fields = [
+              friendly_name_text ~ floor_text ~ area_text ~ device_text,
+              entity_id_text,
+              time_text
+            ] | reject('equalto', '') | join(' - ') %}
+            {% set stale_list.sensors = stale_list.sensors + [report_fields] %}
+          {% endif %}
+        {% endif %}
+      {% endif %}
+    {% endfor %}
+    {{ stale_list.sensors | join(', ') }}
+
+# Stale entities - friendly names only
+
+  stale_sensors_names: >-
+    {% set threshold_seconds = staleness_hours * 3600 %}
+    {% set env_device_classes = ['temperature', 'humidity', 'pressure', 'atmospheric_pressure', 'carbon_dioxide', 'carbon_monoxide', 'volatile_organic_compounds', 'volatile_organic_compounds_parts', 'pm1', 'pm10', 'pm25', 'nitrogen_dioxide', 'ozone', 'sulphur_dioxide', 'aqi'] %}
+    {% set security_binary_classes = ['door', 'window', 'motion', 'occupancy', 'vibration', 'tamper', 'smoke', 'gas', 'safety', 'lock'] %}
+    {% set energy_device_classes = ['energy', 'power', 'voltage', 'current', 'power_factor', 'frequency', 'apparent_power', 'reactive_power'] %}
+    {% set battery_sensor_classes = ['battery'] %}
+    {% set battery_binary_classes = ['battery'] %}
+    {% set stale_list = namespace(sensors=[]) %}
+    {% for state in states %}
+      {% if state.entity_id not in all_exclude_entities %}
+        {% if exclude_unavailable == 'exclude_unavailable_enabled' and state.state in ['unavailable', 'unknown'] %}
+          {% continue %}
+        {% endif %}
+        {% set matched = namespace(val=false) %}
+        {% if 'environment' in domain_categories %}
+          {% if state.domain == 'sensor' and state.attributes.device_class is defined and state.attributes.device_class in env_device_classes %}
+            {% set matched.val = true %}
+          {% endif %}
+        {% endif %}
+        {% if 'security' in domain_categories %}
+          {% if state.domain == 'binary_sensor' and state.attributes.device_class is defined and state.attributes.device_class in security_binary_classes %}
+            {% set matched.val = true %}
+          {% endif %}
+          {% if state.domain == 'lock' %}
+            {% set matched.val = true %}
+          {% endif %}
+        {% endif %}
+        {% if 'energy' in domain_categories %}
+          {% if state.domain == 'sensor' and state.attributes.device_class is defined and state.attributes.device_class in energy_device_classes %}
+            {% set matched.val = true %}
+          {% endif %}
+        {% endif %}
+        {% if 'battery' in domain_categories %}
+          {% if state.domain == 'sensor' and state.attributes.device_class is defined and state.attributes.device_class in battery_sensor_classes %}
+            {% set matched.val = true %}
+          {% endif %}
+          {% if state.domain == 'binary_sensor' and state.attributes.device_class is defined and state.attributes.device_class in battery_binary_classes %}
+            {% set matched.val = true %}
+          {% endif %}
+        {% endif %}
+        {% if state.entity_id in individual_entity_list %}
+          {% set matched.val = true %}
+        {% endif %}
+        {% if matched.val %}
+          {% set age_seconds = (as_timestamp(now()) - as_timestamp(state.last_updated)) %}
+          {% if age_seconds > threshold_seconds %}
+            {% set stale_list.sensors = stale_list.sensors + [state.name] %}
+          {% endif %}
+        {% endif %}
+      {% endif %}
+    {% endfor %}
+    {{ stale_list.sensors | join(', ') }}
+
+# Stale entities count
+
+  stale_count: >-
+    {% set threshold_seconds = staleness_hours * 3600 %}
+    {% set env_device_classes = ['temperature', 'humidity', 'pressure', 'atmospheric_pressure', 'carbon_dioxide', 'carbon_monoxide', 'volatile_organic_compounds', 'volatile_organic_compounds_parts', 'pm1', 'pm10', 'pm25', 'nitrogen_dioxide', 'ozone', 'sulphur_dioxide', 'aqi'] %}
+    {% set security_binary_classes = ['door', 'window', 'motion', 'occupancy', 'vibration', 'tamper', 'smoke', 'gas', 'safety', 'lock'] %}
+    {% set energy_device_classes = ['energy', 'power', 'voltage', 'current', 'power_factor', 'frequency', 'apparent_power', 'reactive_power'] %}
+    {% set battery_sensor_classes = ['battery'] %}
+    {% set battery_binary_classes = ['battery'] %}
+    {% set count = namespace(val=0) %}
+    {% for state in states %}
+      {% if state.entity_id not in all_exclude_entities %}
+        {% if exclude_unavailable == 'exclude_unavailable_enabled' and state.state in ['unavailable', 'unknown'] %}
+          {% continue %}
+        {% endif %}
+        {% set matched = namespace(val=false) %}
+        {% if 'environment' in domain_categories %}
+          {% if state.domain == 'sensor' and state.attributes.device_class is defined and state.attributes.device_class in env_device_classes %}
+            {% set matched.val = true %}
+          {% endif %}
+        {% endif %}
+        {% if 'security' in domain_categories %}
+          {% if state.domain == 'binary_sensor' and state.attributes.device_class is defined and state.attributes.device_class in security_binary_classes %}
+            {% set matched.val = true %}
+          {% endif %}
+          {% if state.domain == 'lock' %}
+            {% set matched.val = true %}
+          {% endif %}
+        {% endif %}
+        {% if 'energy' in domain_categories %}
+          {% if state.domain == 'sensor' and state.attributes.device_class is defined and state.attributes.device_class in energy_device_classes %}
+            {% set matched.val = true %}
+          {% endif %}
+        {% endif %}
+        {% if 'battery' in domain_categories %}
+          {% if state.domain == 'sensor' and state.attributes.device_class is defined and state.attributes.device_class in battery_sensor_classes %}
+            {% set matched.val = true %}
+          {% endif %}
+          {% if state.domain == 'binary_sensor' and state.attributes.device_class is defined and state.attributes.device_class in battery_binary_classes %}
+            {% set matched.val = true %}
+          {% endif %}
+        {% endif %}
+        {% if state.entity_id in individual_entity_list %}
+          {% set matched.val = true %}
+        {% endif %}
+        {% if matched.val %}
+          {% set age_seconds = (as_timestamp(now()) - as_timestamp(state.last_updated)) %}
+          {% if age_seconds > threshold_seconds %}
+            {% set count.val = count.val + 1 %}
+          {% endif %}
+        {% endif %}
+      {% endif %}
+    {% endfor %}
+    {{ count.val }}
+
+# Easy notify message variables
+
+  easy_notify_message: >-
+    {{ stale_sensors | replace(', ', '\n') }}
+
+  persistent_easy_notify_message: >-
+    {{ stale_sensors | replace(', ', '\n') }}
+
+  persistent_message_data: >-
+    {% set message = namespace(data={}) %}
+    {% set message.data = dict(message.data, title=persistent_notify_title, message=persistent_easy_notify_message) %}
+    {% if persistent_notify_id != [] %}
+      {% set message.data = dict(message.data, **{ 'notification_id': persistent_notify_id }) %}
+    {% endif %}
+    {{ message.data }}
+
+  persistent_okay_message_data: >-
+    {% set message = namespace(data={}) %}
+    {% set message.data = dict(message.data, title=persistent_notify_title, message=persistent_notify_okay_message) %}
+    {% if persistent_notify_id != [] %}
+      {% set message.data = dict(message.data, **{ 'notification_id': persistent_notify_id }) %}
+    {% endif %}
+    {{ message.data }}
+
+  dashboard_easy_notify_message: >-
+    {{ stale_sensors | replace(', ', '\n') }}
+
+triggers:
+  - trigger: state
+    entity_id: !input button_entity
+    id: 't0'
+  - trigger: time
+    at: !input time
+    id: 't1'
+
+# All Conditions
+condition:
+#Trigger conditions
+  - condition: or
+    conditions:
+      - condition: and # trigger by button helper
+        conditions:
+          - condition: trigger
+            id: 't0'
+          -  "{{ include_button == 'enable_button_trigger' }}"
+      - condition: and # trigger by time
+        conditions:
+          - condition: trigger
+            id: 't1'
+          -  "{{ include_time == 'time_enabled' }}"
+
+# Check The Weekday Option
+  - condition: or
+    conditions:
+      - "{{ include_time == 'time_disabled' }}"
+      - condition: and
+        conditions:
+        - condition: time
+          weekday: !input weekday_options
+        - "{{ include_time == 'time_enabled' }}"
+      - condition: trigger
+        id: 't0'
+
+# Global Conditions
+  - condition: and
+    conditions: !input global_conditions
+
+action:
+  - choose:
+    - alias: "Perform the custom actions"
+      conditions:
+        - condition: template
+          value_template: "{{ include_custom_actions == 'enable_custom_actions' }}"
+      sequence: !input custom_actions
+  - choose:
+    - alias: "Use the easy notify device options"
+      conditions:
+        - condition: template
+          value_template: "{{ (include_easy_notify == 'enable_easy_notify') or (include_easy_notify == 'enable_easy_okay_notify') }}"
+        - condition: template
+          value_template: "{{ notify_device | length > 0 }}"
+      sequence:
+        - alias: "Send a notification to each device"
+          repeat:
+            for_each: !input notify_device
+            sequence:
+              - choose:
+                - alias: "Stale entities have been found"
+                  conditions:
+                    - "{{ easy_notify_message != '' }}"
+                  sequence:
+                    - choose:
+                      - alias: "Easy notify with no action button"
+                        conditions:
+                          - "{{ notify_action_buttons == 'disabled_notify_action_buttons' }}"
+                        sequence:
+                          - action: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
+                            data:
+                              title: !input notify_title
+                              message: "{{easy_notify_message}}"
+                              data: "{{ device_message_data }}"
+                            continue_on_error: true
+                      - alias: "Easy notify with action button"
+                        conditions:
+                          - "{{ notify_action_buttons != 'disabled_notify_action_buttons' }}"
+                        sequence:
+                          - action: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
+                            data:
+                              title: !input notify_title
+                              message: "{{easy_notify_message}}"
+                              data: "{{ device_message_data_action_button }}"
+                            continue_on_error: true
+                - alias: "No stale entities have been found"
+                  conditions:
+                    - "{{ easy_notify_message == '' }}"
+                    - "{{ include_easy_notify == 'enable_easy_okay_notify' }}"
+                  sequence:
+                    - action: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
+                      data:
+                        title: !input notify_title
+                        message: !input notify_okay_message
+                        data: "{{ device_message_data }}"
+                      continue_on_error: true
+  - choose:
+    - alias: "Use the easy notify persistent notification options"
+      conditions:
+        - condition: template
+          value_template: "{{ (include_persistent_notification == 'enable_persistent_notification') or (include_persistent_notification == 'enable_persistent_okay_notification') }}"
+      sequence:
+        - choose:
+          - alias: "Stale entities have been found"
+            conditions:
+              - "{{ persistent_easy_notify_message != '' }}"
+            sequence:
+              - action: persistent_notification.create
+                data: "{{ persistent_message_data }}"
+          - alias: "No stale entities have been found"
+            conditions:
+              - "{{ persistent_easy_notify_message == '' }}"
+              - "{{ include_persistent_notification == 'enable_persistent_okay_notification' }}"
+            sequence:
+              - action: persistent_notification.create
+                data: "{{ persistent_okay_message_data }}"
+  - choose:
+    - alias: "Use the easy notify dashboard notification options"
+      conditions:
+        - condition: template
+          value_template: >
+            {{ include_dashboard_notification == 'enable_dashboard_okay_notification' }}
+      sequence:
+        - choose:
+          - alias: "Stale entities have been found"
+            conditions:
+              - "{{ dashboard_easy_notify_message != '' }}"
+            sequence:
+              - action: input_text.set_value
+                target:
+                  entity_id: !input dashboard_notification_text_helper
+                data_template:
+                  value: "{{ now().strftime('%d %b %Y') }} - {{ now().strftime('%I')|int }}:{{ now().strftime('%M %p') ~ '\n\n' ~ dashboard_easy_notify_message[:228] }}"
+          - alias: "No stale entities have been found"
+            conditions:
+              - "{{ dashboard_easy_notify_message == '' }}"
+            sequence:
+              - action: input_text.set_value
+                target:
+                  entity_id: !input dashboard_notification_text_helper
+                data_template:
+                  value: "{{ now().strftime('%d %b %Y') }} - {{ now().strftime('%I')|int }}:{{ now().strftime('%M %p') ~ '\n\n' ~ dashboard_notify_okay_message[:228] }}"
+  - choose:
+    - alias: "Check if the easy notify - device To-Do action button is enabled"
+      conditions:
+        - condition: template
+          value_template: "{{ (include_easy_notify == 'enable_easy_notify') or (include_easy_notify == 'enable_easy_okay_notify') }}"
+        - condition: template
+          value_template: "{{(notify_action_buttons == 'enable_to_do_list_button') or (notify_action_buttons == 'enable_to_do_list_button_and_confirmation') or (notify_action_buttons == 'enable_to_do_list_button_and_clear')}}"
+        - condition: template
+          value_template: "{{ notify_device | length > 0 }}"
+      sequence:
+        - alias: "Wait for a response from the action buttons"
+          wait_for_trigger:
+            - trigger: event
+              event_type: mobile_app_notification_action
+              event_data:
+                action: "{{ action_button_to_do }}"
+            - trigger: event
+              event_type: mobile_app_notification_action
+              event_data:
+                action: "{{ action_button_cancel }}"
+        - choose:
+          - alias: "Check if confirmation message is disabled"
+            conditions:
+              - condition: template
+                value_template: "{{ notify_action_buttons == 'enable_to_do_list_button' }}"
+            sequence:
+              - if:
+                  - alias: "Confirmation from the action buttons"
+                    condition: template
+                    value_template: "{{ wait.trigger.idx is defined }}"
+                then:
+                  - alias: "Perform the chosen actions"
+                    choose:
+                      - conditions: "{{ wait.trigger.event.data.action == action_button_to_do }}"
+                        sequence:
+                          - alias: "Add task to To-Do list"
+                            action: todo.add_item
+                            metadata: {}
+                            data:
+                              item: !input to_do_task_title
+                              description: "{{easy_notify_message}}"
+                            target:
+                              entity_id: !input to_do_list
+                      - conditions: "{{ wait.trigger.event.data.action == action_button_cancel }}"
+                        sequence:
+                          - stop: "Stop the automation"
+          - alias: "Check if confirmation message is enabled"
+            conditions:
+              - condition: template
+                value_template: "{{ (notify_action_buttons == 'enable_to_do_list_button_and_confirmation') or (notify_action_buttons == 'enable_to_do_list_button_and_clear') }}"
+            sequence:
+              - if:
+                  - alias: "Confirmation from the action buttons"
+                    condition: template
+                    value_template: "{{ wait.trigger.idx is defined }}"
+                then:
+                  - alias: "Perform the chosen actions"
+                    choose:
+                      - conditions: "{{ wait.trigger.event.data.action == action_button_to_do }}"
+                        sequence:
+                          - alias: "Add task to To-Do list"
+                            action: todo.add_item
+                            metadata: {}
+                            data:
+                              item: !input to_do_task_title
+                              description: "{{easy_notify_message}}"
+                            target:
+                              entity_id: !input to_do_list
+                          - choose:
+                            - alias: "Check if confirmation message is enabled"
+                              conditions:
+                                - condition: template
+                                  value_template: "{{ notify_action_buttons == 'enable_to_do_list_button_and_confirmation' }}"
+                              sequence:
+                                - alias: "Send a notification to each device"
+                                  repeat:
+                                    for_each: !input notify_device
+                                    sequence:
+                                      - action: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
+                                        data:
+                                          title: !input action_button_confirmation_title
+                                          message: !input action_button_confirmation_message
+                                          data: "{{ device_confirmation_message_data }}"
+                                        continue_on_error: true
+                            - alias: "Check if clear when done is enabled"
+                              conditions:
+                                - condition: template
+                                  value_template: "{{ notify_action_buttons == 'enable_to_do_list_button_and_clear' }}"
+                              sequence:
+                                - alias: "Send a notification to each device"
+                                  repeat:
+                                    for_each: !input notify_device
+                                    sequence:
+                                      - action: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
+                                        data:
+                                          message: clear_notification
+                                          data:
+                                            tag: !input notify_tag
+                                        continue_on_error: true
+                      - conditions: "{{ wait.trigger.event.data.action == action_button_cancel }}"
+                        sequence:
+                          - choose:
+                            - alias: "Check if confirmation message is enabled"
+                              conditions:
+                                - condition: template
+                                  value_template: "{{ notify_action_buttons == 'enable_to_do_list_button_and_confirmation' }}"
+                              sequence:
+                                - alias: "Send a notification to each device"
+                                  repeat:
+                                    for_each: !input notify_device
+                                    sequence:
+                                      - action: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
+                                        data:
+                                          title: !input action_button_confirmation_title
+                                          message: !input cancel_action_button_confirmation_message
+                                          data: "{{ device_message_data }}"
+                                        continue_on_error: true
+                            - alias: "Check if clear when done is enabled"
+                              conditions:
+                                - condition: template
+                                  value_template: "{{ notify_action_buttons == 'enable_to_do_list_button_and_clear' }}"
+                              sequence:
+                                - alias: "Send a notification to each device"
+                                  repeat:
+                                    for_each: !input notify_device
+                                    sequence:
+                                      - action: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
+                                        data:
+                                          message: clear_notification
+                                          data:
+                                            tag: !input notify_tag
+                                        continue_on_error: true
