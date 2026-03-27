@@ -1242,7 +1242,7 @@ action:
                       - conditions: "{{ wait.trigger.event.data.action == action_button_to_do }}"
                         sequence:
                           - alias: "Add task to To-Do list"
-                            action: todo.add_item
+                            action: todo.add_todo_item
                             metadata: {}
                             data:
                               item: !input to_do_task_title
@@ -1267,7 +1267,7 @@ action:
                       - conditions: "{{ wait.trigger.event.data.action == action_button_to_do }}"
                         sequence:
                           - alias: "Add task to To-Do list"
-                            action: todo.add_item
+                            action: todo.add_todo_item
                             metadata: {}
                             data:
                               item: !input to_do_task_title
