@@ -245,19 +245,18 @@ blueprint:
                   value: "enabled"
                 - label: Disable
                   value: "disabled"
-        temp_alarm_include_html5_notify:
-          name: HTML5 Browser Push - notify.html5 (Optional)
+        temp_alarm_html5_notify_entities:
+          name: HTML5 Browser Push (Optional)
           description: >
-            Send browser push notifications using the notify.html5 service.
+            Select HTML5 notify entities for browser push notifications. Leave empty to disable HTML5 push.
+            Replaces the deprecated notify.html5 action - uses notify.send_message on each selected entity.
             Uses the same title, message and notification settings as device notifications above.
-          default: disabled
+          default: []
           selector:
-            select:
-              options:
-                - label: Enable
-                  value: "enabled"
-                - label: Disable
-                  value: "disabled"
+            entity:
+              filter:
+                - integration: html5
+              multiple: true
         temp_alarm_notify_title:
           name: Title
           description: >
@@ -602,19 +601,18 @@ blueprint:
                   value: "enabled"
                 - label: Disable
                   value: "disabled"
-        temp_clear_include_html5_notify:
-          name: HTML5 Browser Push - notify.html5 (Optional)
+        temp_clear_html5_notify_entities:
+          name: HTML5 Browser Push (Optional)
           description: >
-            Send browser push notifications using the notify.html5 service.
+            Select HTML5 notify entities for browser push notifications. Leave empty to disable HTML5 push.
+            Replaces the deprecated notify.html5 action - uses notify.send_message on each selected entity.
             Uses the same title, message and notification settings as device notifications above.
-          default: disabled
+          default: []
           selector:
-            select:
-              options:
-                - label: Enable
-                  value: "enabled"
-                - label: Disable
-                  value: "disabled"
+            entity:
+              filter:
+                - integration: html5
+              multiple: true
         temp_clear_notify_title:
           name: Title
           description: >
@@ -858,19 +856,18 @@ blueprint:
                   value: "enabled"
                 - label: Disable
                   value: "disabled"
-        hum_alarm_include_html5_notify:
-          name: HTML5 Browser Push - notify.html5 (Optional)
+        hum_alarm_html5_notify_entities:
+          name: HTML5 Browser Push (Optional)
           description: >
-            Send browser push notifications using the notify.html5 service.
+            Select HTML5 notify entities for browser push notifications. Leave empty to disable HTML5 push.
+            Replaces the deprecated notify.html5 action - uses notify.send_message on each selected entity.
             Uses the same title, message and notification settings as device notifications above.
-          default: disabled
+          default: []
           selector:
-            select:
-              options:
-                - label: Enable
-                  value: "enabled"
-                - label: Disable
-                  value: "disabled"
+            entity:
+              filter:
+                - integration: html5
+              multiple: true
         hum_alarm_notify_title:
           name: Title
           description: >
@@ -1215,19 +1212,18 @@ blueprint:
                   value: "enabled"
                 - label: Disable
                   value: "disabled"
-        hum_clear_include_html5_notify:
-          name: HTML5 Browser Push - notify.html5 (Optional)
+        hum_clear_html5_notify_entities:
+          name: HTML5 Browser Push (Optional)
           description: >
-            Send browser push notifications using the notify.html5 service.
+            Select HTML5 notify entities for browser push notifications. Leave empty to disable HTML5 push.
+            Replaces the deprecated notify.html5 action - uses notify.send_message on each selected entity.
             Uses the same title, message and notification settings as device notifications above.
-          default: disabled
+          default: []
           selector:
-            select:
-              options:
-                - label: Enable
-                  value: "enabled"
-                - label: Disable
-                  value: "disabled"
+            entity:
+              filter:
+                - integration: html5
+              multiple: true
         hum_clear_notify_title:
           name: Title
           description: >
@@ -1558,7 +1554,7 @@ variables:
   temp_alarm_notify_device: !input temp_alarm_notify_device
   temp_alarm_notify_entities: !input temp_alarm_notify_entities
   temp_alarm_include_notify_all: !input temp_alarm_include_notify_all
-  temp_alarm_include_html5_notify: !input temp_alarm_include_html5_notify
+  temp_alarm_html5_notify_entities: !input temp_alarm_html5_notify_entities
   temp_alarm_notify_title: !input temp_alarm_notify_title
   temp_alarm_notify_message: !input temp_alarm_notify_message
   temp_alarm_notify_tag: !input temp_alarm_notify_tag
@@ -1590,7 +1586,7 @@ variables:
   temp_clear_notify_device: !input temp_clear_notify_device
   temp_clear_notify_entities: !input temp_clear_notify_entities
   temp_clear_include_notify_all: !input temp_clear_include_notify_all
-  temp_clear_include_html5_notify: !input temp_clear_include_html5_notify
+  temp_clear_html5_notify_entities: !input temp_clear_html5_notify_entities
   temp_clear_notify_title: !input temp_clear_notify_title
   temp_clear_notify_message: !input temp_clear_notify_message
   temp_clear_notify_tag: !input temp_clear_notify_tag
@@ -1613,7 +1609,7 @@ variables:
   hum_alarm_notify_device: !input hum_alarm_notify_device
   hum_alarm_notify_entities: !input hum_alarm_notify_entities
   hum_alarm_include_notify_all: !input hum_alarm_include_notify_all
-  hum_alarm_include_html5_notify: !input hum_alarm_include_html5_notify
+  hum_alarm_html5_notify_entities: !input hum_alarm_html5_notify_entities
   hum_alarm_notify_title: !input hum_alarm_notify_title
   hum_alarm_notify_message: !input hum_alarm_notify_message
   hum_alarm_notify_tag: !input hum_alarm_notify_tag
@@ -1645,7 +1641,7 @@ variables:
   hum_clear_notify_device: !input hum_clear_notify_device
   hum_clear_notify_entities: !input hum_clear_notify_entities
   hum_clear_include_notify_all: !input hum_clear_include_notify_all
-  hum_clear_include_html5_notify: !input hum_clear_include_html5_notify
+  hum_clear_html5_notify_entities: !input hum_clear_html5_notify_entities
   hum_clear_notify_title: !input hum_clear_notify_title
   hum_clear_notify_message: !input hum_clear_notify_message
   hum_clear_notify_tag: !input hum_clear_notify_tag
@@ -2040,31 +2036,38 @@ action:
                             continue_on_error: true
               # -- HTML5 Browser Push --
               - choose:
-                - alias: "Temp Alarm - HTML5 (notify.html5)"
+                - alias: "Temp Alarm - HTML5 Browser Push"
                   conditions:
-                    - "{{ temp_alarm_include_html5_notify == 'enabled' }}"
+                    - "{{ (temp_alarm_html5_notify_entities | length > 0) }}"
                   sequence:
-                    - choose:
-                      - alias: "Ohne Action Buttons"
-                        conditions:
-                          - "{{ temp_alarm_notify_action_buttons == 'disabled' }}"
+                    - repeat:
+                        for_each: "{{ temp_alarm_html5_notify_entities }}"
                         sequence:
-                          - action: notify.html5
-                            data:
-                              title: "{{ temp_alarm_notify_title }}"
-                              message: "{{ temp_alarm_notify_message }}"
-                              data: "{{ temp_alarm_device_message_data }}"
-                            continue_on_error: true
-                      - alias: "Mit Action Buttons"
-                        conditions:
-                          - "{{ temp_alarm_notify_action_buttons != 'disabled' }}"
-                        sequence:
-                          - action: notify.html5
-                            data:
-                              title: "{{ temp_alarm_notify_title }}"
-                              message: "{{ temp_alarm_notify_message }}"
-                              data: "{{ temp_alarm_device_message_data_action_button }}"
-                            continue_on_error: true
+                          - choose:
+                            - alias: "Ohne Action Buttons"
+                              conditions:
+                                - "{{ temp_alarm_notify_action_buttons == 'disabled' }}"
+                              sequence:
+                                - action: notify.send_message
+                                  target:
+                                    entity_id: "{{ repeat.item }}"
+                                  data:
+                                    title: "{{ temp_alarm_notify_title }}"
+                                    message: "{{ temp_alarm_notify_message }}"
+                                    data: "{{ temp_alarm_device_message_data }}"
+                                  continue_on_error: true
+                            - alias: "Mit Action Buttons"
+                              conditions:
+                                - "{{ temp_alarm_notify_action_buttons != 'disabled' }}"
+                              sequence:
+                                - action: notify.send_message
+                                  target:
+                                    entity_id: "{{ repeat.item }}"
+                                  data:
+                                    title: "{{ temp_alarm_notify_title }}"
+                                    message: "{{ temp_alarm_notify_message }}"
+                                    data: "{{ temp_alarm_device_message_data_action_button }}"
+                                  continue_on_error: true
               # -- UI Notification --
               - choose:
                 - alias: "Temp Alarm - UI-Benachrichtigung"
@@ -2103,9 +2106,9 @@ action:
               - choose:
                 - alias: "Temp Alarm - Action Buttons warten"
                   conditions:
-                    - "{{ temp_alarm_include_device_notify == 'enabled' or temp_alarm_include_notify_all == 'enabled' or temp_alarm_include_html5_notify == 'enabled' }}"
+                    - "{{ temp_alarm_include_device_notify == 'enabled' or temp_alarm_include_notify_all == 'enabled' or (temp_alarm_html5_notify_entities | length > 0) }}"
                     - "{{ temp_alarm_notify_action_buttons != 'disabled' or alarm_active_helper not in [[], '', none] }}"
-                    - "{{ (temp_alarm_notify_device | length > 0) or (temp_alarm_notify_entities | length > 0) or temp_alarm_include_notify_all == 'enabled' or temp_alarm_include_html5_notify == 'enabled' }}"
+                    - "{{ (temp_alarm_notify_device | length > 0) or (temp_alarm_notify_entities | length > 0) or temp_alarm_include_notify_all == 'enabled' or (temp_alarm_html5_notify_entities | length > 0) }}"
                   sequence:
                     - wait_for_trigger:
                         - trigger: event
@@ -2257,16 +2260,21 @@ action:
                       continue_on_error: true
               # -- HTML5 Browser Push --
               - choose:
-                - alias: "Temp Entwarnung - HTML5 (notify.html5)"
+                - alias: "Temp Entwarnung - HTML5 Browser Push"
                   conditions:
-                    - "{{ temp_clear_include_html5_notify == 'enabled' }}"
+                    - "{{ (temp_clear_html5_notify_entities | length > 0) }}"
                   sequence:
-                    - action: notify.html5
-                      data:
-                        title: "{{ temp_clear_notify_title }}"
-                        message: "{{ temp_clear_notify_message }}"
-                        data: "{{ temp_clear_device_message_data }}"
-                      continue_on_error: true
+                    - repeat:
+                        for_each: "{{ temp_clear_html5_notify_entities }}"
+                        sequence:
+                          - action: notify.send_message
+                            target:
+                              entity_id: "{{ repeat.item }}"
+                            data:
+                              title: "{{ temp_clear_notify_title }}"
+                              message: "{{ temp_clear_notify_message }}"
+                              data: "{{ temp_clear_device_message_data }}"
+                            continue_on_error: true
               # -- UI Notification --
               - choose:
                 - alias: "Temp Entwarnung - UI-Benachrichtigung"
@@ -2356,16 +2364,21 @@ action:
                             continue_on_error: true
                     # -- HTML5 Browser Push --
                     - choose:
-                      - alias: "Nachgeholter Hum Alarm - HTML5 (notify.html5)"
+                      - alias: "Nachgeholter Hum Alarm - HTML5 Browser Push"
                         conditions:
-                          - "{{ hum_alarm_include_html5_notify == 'enabled' }}"
+                          - "{{ (hum_alarm_html5_notify_entities | length > 0) }}"
                         sequence:
-                          - action: notify.html5
-                            data:
-                              title: "{{ hum_alarm_notify_title }}"
-                              message: "{{ hum_alarm_notify_message }}"
-                              data: "{{ hum_alarm_device_message_data }}"
-                            continue_on_error: true
+                          - repeat:
+                              for_each: "{{ hum_alarm_html5_notify_entities }}"
+                              sequence:
+                                - action: notify.send_message
+                                  target:
+                                    entity_id: "{{ repeat.item }}"
+                                  data:
+                                    title: "{{ hum_alarm_notify_title }}"
+                                    message: "{{ hum_alarm_notify_message }}"
+                                    data: "{{ hum_alarm_device_message_data }}"
+                                  continue_on_error: true
                     - choose:
                       - alias: "Nachgeholter Hum Alarm - UI-Benachrichtigung"
                         conditions:
@@ -2390,8 +2403,8 @@ action:
                     - choose:
                       - conditions:
                           - "{{ alarm_active_helper not in [[], '', none] }}"
-                          - "{{ hum_alarm_include_device_notify == 'enabled' or hum_alarm_include_notify_all == 'enabled' or hum_alarm_include_html5_notify == 'enabled' }}"
-                          - "{{ (hum_alarm_notify_device | length > 0) or (hum_alarm_notify_entities | length > 0) or hum_alarm_include_notify_all == 'enabled' or hum_alarm_include_html5_notify == 'enabled' }}"
+                          - "{{ hum_alarm_include_device_notify == 'enabled' or hum_alarm_include_notify_all == 'enabled' or (hum_alarm_html5_notify_entities | length > 0) }}"
+                          - "{{ (hum_alarm_notify_device | length > 0) or (hum_alarm_notify_entities | length > 0) or hum_alarm_include_notify_all == 'enabled' or (hum_alarm_html5_notify_entities | length > 0) }}"
                         sequence:
                           - wait_for_trigger:
                               - trigger: event
@@ -2552,31 +2565,38 @@ action:
                                   continue_on_error: true
                     # -- HTML5 Browser Push --
                     - choose:
-                      - alias: "Hum Alarm - HTML5 (notify.html5)"
+                      - alias: "Hum Alarm - HTML5 Browser Push"
                         conditions:
-                          - "{{ hum_alarm_include_html5_notify == 'enabled' }}"
+                          - "{{ (hum_alarm_html5_notify_entities | length > 0) }}"
                         sequence:
-                          - choose:
-                            - alias: "Ohne Action Buttons"
-                              conditions:
-                                - "{{ hum_alarm_notify_action_buttons == 'disabled' }}"
+                          - repeat:
+                              for_each: "{{ hum_alarm_html5_notify_entities }}"
                               sequence:
-                                - action: notify.html5
-                                  data:
-                                    title: "{{ hum_alarm_notify_title }}"
-                                    message: "{{ hum_alarm_notify_message }}"
-                                    data: "{{ hum_alarm_device_message_data }}"
-                                  continue_on_error: true
-                            - alias: "Mit Action Buttons"
-                              conditions:
-                                - "{{ hum_alarm_notify_action_buttons != 'disabled' }}"
-                              sequence:
-                                - action: notify.html5
-                                  data:
-                                    title: "{{ hum_alarm_notify_title }}"
-                                    message: "{{ hum_alarm_notify_message }}"
-                                    data: "{{ hum_alarm_device_message_data_action_button }}"
-                                  continue_on_error: true
+                                - choose:
+                                  - alias: "Ohne Action Buttons"
+                                    conditions:
+                                      - "{{ hum_alarm_notify_action_buttons == 'disabled' }}"
+                                    sequence:
+                                      - action: notify.send_message
+                                        target:
+                                          entity_id: "{{ repeat.item }}"
+                                        data:
+                                          title: "{{ hum_alarm_notify_title }}"
+                                          message: "{{ hum_alarm_notify_message }}"
+                                          data: "{{ hum_alarm_device_message_data }}"
+                                        continue_on_error: true
+                                  - alias: "Mit Action Buttons"
+                                    conditions:
+                                      - "{{ hum_alarm_notify_action_buttons != 'disabled' }}"
+                                    sequence:
+                                      - action: notify.send_message
+                                        target:
+                                          entity_id: "{{ repeat.item }}"
+                                        data:
+                                          title: "{{ hum_alarm_notify_title }}"
+                                          message: "{{ hum_alarm_notify_message }}"
+                                          data: "{{ hum_alarm_device_message_data_action_button }}"
+                                        continue_on_error: true
                     # -- UI Notification --
                     - choose:
                       - alias: "Hum Alarm - UI-Benachrichtigung"
@@ -2615,9 +2635,9 @@ action:
                     - choose:
                       - alias: "Hum Alarm - Action Buttons warten"
                         conditions:
-                          - "{{ hum_alarm_include_device_notify == 'enabled' or hum_alarm_include_notify_all == 'enabled' or hum_alarm_include_html5_notify == 'enabled' }}"
+                          - "{{ hum_alarm_include_device_notify == 'enabled' or hum_alarm_include_notify_all == 'enabled' or (hum_alarm_html5_notify_entities | length > 0) }}"
                           - "{{ hum_alarm_notify_action_buttons != 'disabled' or alarm_active_helper not in [[], '', none] }}"
-                          - "{{ (hum_alarm_notify_device | length > 0) or (hum_alarm_notify_entities | length > 0) or hum_alarm_include_notify_all == 'enabled' or hum_alarm_include_html5_notify == 'enabled' }}"
+                          - "{{ (hum_alarm_notify_device | length > 0) or (hum_alarm_notify_entities | length > 0) or hum_alarm_include_notify_all == 'enabled' or (hum_alarm_html5_notify_entities | length > 0) }}"
                         sequence:
                           - wait_for_trigger:
                               - trigger: event
@@ -2776,16 +2796,21 @@ action:
                             continue_on_error: true
                     # -- HTML5 Browser Push --
                     - choose:
-                      - alias: "Hum Entwarnung - HTML5 (notify.html5)"
+                      - alias: "Hum Entwarnung - HTML5 Browser Push"
                         conditions:
-                          - "{{ hum_clear_include_html5_notify == 'enabled' }}"
+                          - "{{ (hum_clear_html5_notify_entities | length > 0) }}"
                         sequence:
-                          - action: notify.html5
-                            data:
-                              title: "{{ hum_clear_notify_title }}"
-                              message: "{{ hum_clear_notify_message }}"
-                              data: "{{ hum_clear_device_message_data }}"
-                            continue_on_error: true
+                          - repeat:
+                              for_each: "{{ hum_clear_html5_notify_entities }}"
+                              sequence:
+                                - action: notify.send_message
+                                  target:
+                                    entity_id: "{{ repeat.item }}"
+                                  data:
+                                    title: "{{ hum_clear_notify_title }}"
+                                    message: "{{ hum_clear_notify_message }}"
+                                    data: "{{ hum_clear_device_message_data }}"
+                                  continue_on_error: true
                     # -- UI Notification --
                     - choose:
                       - alias: "Hum Entwarnung - UI-Benachrichtigung"
