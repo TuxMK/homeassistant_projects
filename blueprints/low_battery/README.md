@@ -44,7 +44,7 @@ Alle Features des Original-Blueprints bleiben erhalten:
 2. **Blueprint importieren** klicken
 3. URL eingeben:
    ```
-   https://raw.githubusercontent.com/DEIN_USERNAME/homeassistant-collection/main/blueprints/low_battery/blueprint_low_battery.yaml
+   https://github.com/TuxMK/homeassistant_projects/blob/main/blueprints/low_battery/blueprint_low_battery.yaml
    ```
 
 ### Manuell
