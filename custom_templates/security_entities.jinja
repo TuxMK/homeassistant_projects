@@ -75,7 +75,7 @@
 {# Alarm-Fehler-Sensoren - Geraetedefekte und Lebensdauer-Ende #}
 {% macro alarm_fehler_sensoren() %}
 {{ states.binary_sensor
-   | selectattr('entity_id', 'search', '(co_alarm_.*_is_life_end|feueralarm_.*_fault)')
+   | selectattr('entity_id', 'search', '(co_alarm_.*_is_life_end|feueralarm_.*_(fault|is_life_end))')
    | map(attribute='entity_id')
    | list
    | to_json }}

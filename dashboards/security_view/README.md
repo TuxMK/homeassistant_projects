@@ -4,9 +4,10 @@ Ein vollstaendiges Dashboard fuer die Sicherheitsueberwachung mit zentralen Enti
 
 ## Features
 
-- Alarm-Panel Steuerung (Einbruch, Feuer/CO, Leckage)
+- Alarm-Panel Steuerung (Einbruch, Feuer/CO, Leckage) via Mushroom-Cards
+- Status-Badge fuer den Gesamtstatus (`sensor.sicherheitsstatus`)
 - Dynamische Entity-Listen aus `sensor.sicherheitsstatus`
-- Farbcodierung je nach Status (gruen/gelb/orange/rot)
+- Farbcodierung je nach Status (gruen/gelb/orange/rot, unbekannt = grau)
 - Zentrale Pattern-Definition (keine Duplikate)
 
 ## Voraussetzungen
@@ -14,6 +15,7 @@ Ein vollstaendiges Dashboard fuer die Sicherheitsueberwachung mit zentralen Enti
 - Template-Sensor `sensor.sicherheitsstatus` (siehe [templates/security_status/](../../templates/security_status/))
 - [auto-entities](https://github.com/thomasloven/lovelace-auto-entities) (via HACS)
 - [card-mod](https://github.com/thomasloven/lovelace-card-mod) (via HACS, fuer Farbcodierung)
+- [Mushroom](https://github.com/piitaya/lovelace-mushroom) (via HACS, fuer Alarm-Panels, Probealarm-Select und Status-Badge)
 
 ## Verwendung der Entity-Listen
 
