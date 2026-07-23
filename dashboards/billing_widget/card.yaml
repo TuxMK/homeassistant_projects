@@ -1,0 +1,18 @@
+# Abrechnungs-Widget für Übersichts-Dashboard
+# Verlinkt auf das Abrechnungs-Dashboard (Strom & Gas).
+#
+# Voraussetzung:
+# - Mushroom Cards (via HACS installieren)
+
+type: custom:mushroom-template-card
+primary: Abrechnung
+secondary: Strom & Gas
+icon: mdi:currency-eur
+color: gold
+tap_action:
+  action: navigate
+  navigation_path: /dashboard-abrechnung/0
+grid_options:
+  columns: 6
+  rows: 2
+features_position: bottom

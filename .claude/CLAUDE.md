@@ -13,7 +13,17 @@ Dieses Repository ist eine Sammlung von Blueprints, Konfigurationen, Skripten un
 │   └── low_battery/                  # Batteriewarnung
 ├── custom_templates/                 # Zentrale Jinja2-Macros (security_entities.jinja)
 ├── templates/                        # Template-Sensoren (security_status/ -> sensor.sicherheitsstatus)
-├── dashboards/                       # Lovelace-Dashboards (security_view, security_widget)
+├── dashboards/                       # Lovelace-Dashboards (je Modul: dashboard.yaml/card.yaml + README.md)
+│   ├── security_view/                # Vollständiges Sicherheits-Dashboard
+│   ├── security_widget/              # Sicherheitsstatus-Widget (Link zur Detail-Ansicht)
+│   ├── wallbox_widget/               # evcc-Wallbox (Lade-/Anschlussstatus)
+│   ├── energy_widget/                # SENEC-Energiefluss (PV/Netz/Akku)
+│   ├── weather_widget/               # Wetterlage (Zustand, Temperatur, Wind)
+│   ├── temperature_widget/           # Kühl-/Gefrierschrank-Temperaturen
+│   ├── pool_widget/                  # Pool-Temperatur und Pumpenstatus
+│   ├── waste_widget/                 # Nächste Müllabholung
+│   ├── statistics_widget/            # Navigation zur Statistik-/Energie-Ansicht
+│   └── billing_widget/               # Navigation zum Abrechnungs-Dashboard
 ├── automations/                      # Standalone-Automationen (mqtt_pulse_counter_cleanup)
 ├── zigbee2mqtt/                      # Zigbee2MQTT-Konfiguration und Overrides
 ├── LICENSE                           # MIT License
@@ -39,7 +49,12 @@ ignoriert (grau statt rot) — unbekannte Melder sind kein Fehler.
 ### Sprache
 - Dokumentation: Deutsch
 - Code/YAML-Kommentare: Deutsch oder Englisch
-- Umlaute in Dateien werden als ae, oe, ue geschrieben
+- Umlaute: In sichtbarem Text (Karten-Anzeige, Kommentare, Dokumentation) werden
+  echte Umlaute (ä, ö, ü, ß) verwendet.
+- Ausnahme: Technische Bezeichner bleiben unverändert bei ihrer eindeutigen
+  ASCII-Schreibweise — Entity-IDs (z. B. `sensor.nachste_abholung`,
+  `sensor.kuhlschrank_...`), Slugs, Datei-/Ordnernamen, CSS-Variablen. Diese
+  nicht "umlautisieren".
 
 ### Dokumentation
 - README.md fuer jedes Modul mit:

@@ -1,0 +1,78 @@
+# Wallbox-Widget für Übersichts-Dashboard
+# Zeigt Lade-/Anschlussstatus der evcc-Wallbox(en) an
+# und verlinkt auf das evcc-Dashboard.
+#
+# Voraussetzungen:
+# - evcc-Integration mit den hems_evcc_wallbox_*-Entities
+# - Mushroom Cards (via HACS installieren)
+#
+# Mehrere Wallboxen: einfach weitere Einträge in die wallboxes-Liste ergänzen.
+# Einfach den Code unten kopieren und als neue Karte im Dashboard hinzufügen.
+
+type: custom:mushroom-template-card
+primary: Wallbox
+secondary: |
+  {% set wallboxes = [
+    {'name': 'Wohnung EG',
+     'charging': 'binary_sensor.hems_evcc_wallbox_wohnung_eg_charging',
+     'connected': 'binary_sensor.hems_evcc_wallbox_wohnung_eg_connected',
+     'power': 'sensor.hems_evcc_wallbox_wohnung_eg_charge_power',
+     'soc': 'sensor.hems_evcc_wallbox_wohnung_eg_vehicle_soc',
+     'limit': 'number.hems_evcc_wallbox_wohnung_eg_limit_soc',
+     'vehiclelimit': 'sensor.hems_evcc_wallbox_wohnung_eg_vehicle_limit_soc',
+     'pv': 'sensor.hems_evcc_wallbox_wohnung_eg_session_solar_percentage',
+     'vehicle': 'select.hems_evcc_wallbox_wohnung_eg_vehicle_name'}
+  ] %}
+  {% set ns = namespace(lines=[]) %}
+  {% for wb in wallboxes %}
+    {# Anzeigename aus dem verschachtelten 'vehicle'-Attribut (Dict) der evcc-Auswahl,
+       z. B. "Skoda Elroq von Max" — unabhängig vom technischen state (z. B. "db:11"). #}
+    {% set info = state_attr(wb.vehicle, 'vehicle') %}
+    {% set vname = info.name if (info is mapping and info.name is defined) else none %}
+    {% set raw = states(wb.vehicle) %}
+    {% if vname not in [none, 'None', '', 'unknown', 'unavailable'] %}
+      {% set car = vname %}
+    {% elif raw in ['unknown', 'unavailable', 'none', 'None', ''] %}
+      {% set car = 'kein Fahrzeug' %}
+    {% else %}
+      {% set car = raw %}
+    {% endif %}
+    {% set soc = states(wb.soc) | float(0) | round(0) %}
+    {% set lim = states(wb.limit) | float(0) | round(0) %}
+    {% set vlim = states(wb.vehiclelimit) | float(0) | round(0) %}
+    {# evcc-Ladeziel, optional ergänzt um das vom Fahrzeug gemeldete Limit #}
+    {% set target = lim ~ '%' ~ (' / ' ~ vlim ~ '%' if vlim > 0 else '') %}
+    {% if is_state(wb.charging, 'on') %}
+      {% set kw = (states(wb.power) | float(0) / 1000) | round(1) %}
+      {% set pv = states(wb.pv) | float(0) | round(0) %}
+      {% set ns.lines = ns.lines + [car ~ ': ' ~ kw ~ 'kW · ' ~ soc ~ '%→' ~ target ~ ' · PV ' ~ pv ~ '%'] %}
+    {% elif is_state(wb.connected, 'on') %}
+      {% set socinfo = (' · ' ~ soc ~ '%→' ~ target) if soc > 0 else '' %}
+      {% set ns.lines = ns.lines + [wb.name ~ ': ' ~ car ~ ' angesteckt, lädt nicht' ~ socinfo] %}
+    {% else %}
+      {% set ns.lines = ns.lines + [wb.name ~ ': frei'] %}
+    {% endif %}
+  {% endfor %}
+  {% for line in ns.lines %}{{ line }}
+  {% endfor %}
+icon: mdi:ev-station
+badge_icon: >
+  {% if is_state('binary_sensor.hems_evcc_wallbox_wohnung_eg_charging','on')
+  %}mdi:flash{% endif %}
+badge_color: green
+multiline_secondary: true
+tap_action:
+  action: navigate
+  navigation_path: /49686a9f_evcc
+grid_options:
+  columns: 6
+  rows: 2
+color: >
+  {% if is_state('binary_sensor.hems_evcc_wallbox_wohnung_eg_charging','on')
+  %}primary
+
+  {% elif is_state('binary_sensor.hems_evcc_wallbox_wohnung_eg_connected','on')
+  %}orange
+
+  {% else %}grey{% endif %}
+features_position: bottom

@@ -1,4 +1,4 @@
-# Sicherheits-Widget fuer Uebersichts-Dashboard
+# Sicherheits-Widget für Übersichts-Dashboard
 # Zeigt den Gesamtstatus aller Sicherheitssensoren an
 # und verlinkt auf die Sicherheits-Ansicht.
 #
@@ -6,7 +6,7 @@
 # - Template-Sensor "sensor.sicherheitsstatus" (siehe templates/security_status/sensor.yaml)
 # - Mushroom Cards (via HACS installieren)
 #
-# Einfach den Code unten kopieren und als neue Karte im Dashboard hinzufuegen.
+# Einfach den Code unten kopieren und als neue Karte im Dashboard hinzufügen.
 
 type: custom:mushroom-template-card
 primary: >

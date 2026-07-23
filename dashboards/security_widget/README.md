@@ -1,13 +1,13 @@
-# Sicherheits-Widget fuer Dashboard
+# Sicherheits-Widget für Dashboard
 
 Ein kompaktes Widget das den Sicherheitsstatus anzeigt und auf die Sicherheits-Ansicht verlinkt.
 
 ## Features
 
 - Dynamische Statusanzeige (Sicher/Warnung/Alarm)
-- Farbcodierung (Gruen/Orange/Rot)
+- Farbcodierung (Grün/Orange/Rot)
 - Klick-Navigation zur Sicherheits-Ansicht
-- 5 verschiedene Varianten verfuegbar
+- 5 verschiedene Varianten verfügbar
 - Funktioniert mit Standard Home Assistant Karten
 
 ## Voraussetzung
@@ -19,7 +19,7 @@ Siehe: [templates/security_status/](../../templates/security_status/)
 
 ### Variante 1: Markdown-Karte (empfohlen)
 
-Kompakte Anzeige mit Icon und Status-Text. Funktioniert ohne zusaetzliche Custom Cards.
+Kompakte Anzeige mit Icon und Status-Text. Funktioniert ohne zusätzliche Custom Cards.
 
 ```yaml
 type: markdown
@@ -66,7 +66,7 @@ tap_action:
 
 ### Variante 3: Button-Karte
 
-Kompakter Button, ideal fuer Grid-Layouts:
+Kompakter Button, ideal für Grid-Layouts:
 
 ```yaml
 type: button
@@ -119,13 +119,13 @@ tap_action:
 
 1. Template-Sensor einrichten (siehe [templates/security_status/](../../templates/security_status/))
 
-2. Dashboard im UI-Editor oeffnen
+2. Dashboard im UI-Editor öffnen
 
-3. Neue Karte hinzufuegen → "Manuell" waehlen
+3. Neue Karte hinzufügen → "Manuell" wählen
 
-4. YAML-Code einer Variante einfuegen
+4. YAML-Code einer Variante einfügen
 
-5. Navigation-Pfad anpassen falls noetig:
+5. Navigation-Pfad anpassen falls nötig:
    ```yaml
    navigation_path: /lovelace/sicherheit  # Standard
    navigation_path: /dashboard-name/sicherheit  # Bei benutzerdefiniertem Dashboard-URL
@@ -146,18 +146,18 @@ tap_action:
 ### Farben
 
 Die Farben nutzen CSS-Variablen von Home Assistant:
-- `var(--error-color, red)` - Rot fuer Alarm
-- `var(--warning-color, orange)` - Orange fuer Warnung
-- `var(--success-color, green)` - Gruen fuer Sicher
+- `var(--error-color, red)` - Rot für Alarm
+- `var(--warning-color, orange)` - Orange für Warnung
+- `var(--success-color, green)` - Grün für Sicher
 
-### Grid-Groesse
+### Grid-Größe
 
-Bei Tile- oder Markdown-Karten kann die Groesse angepasst werden:
+Bei Tile- oder Markdown-Karten kann die Größe angepasst werden:
 
 ```yaml
 grid_options:
   columns: 2  # Breite (1-4)
-  rows: 1     # Hoehe
+  rows: 1     # Höhe
 ```
 
 ## Screenshots

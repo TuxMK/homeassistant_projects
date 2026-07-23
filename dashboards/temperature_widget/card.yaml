@@ -1,0 +1,37 @@
+# Temperatur-Widget für Übersichts-Dashboard
+# Zeigt die Temperaturen von Kühl-/Gefrierschränken an und verlinkt auf die
+# Temperatur-Alarm-Ansicht.
+#
+# Voraussetzungen:
+# - sensor.kuhlschrank_wohnungeg_kuche_temperature
+# - sensor.kuhlschrank_wohnungeg_keller_temperature
+# - sensor.gefrierschrank_wohnungeg_keller_temperature
+# - Mushroom Cards (via HACS installieren)
+
+type: custom:mushroom-template-card
+primary: Temperatur
+secondary: >
+  Kühlschrank Küche {{ states('sensor.kuhlschrank_wohnungeg_kuche_temperature')
+  | round(1) }} °C ·
+
+  Kühlschrank Keller {{
+  states('sensor.kuhlschrank_wohnungeg_keller_temperature') | round(1) }} °C ·
+
+  Gefrierschrank Keller {{
+  states('sensor.gefrierschrank_wohnungeg_keller_temperature') | round(1) }} °C
+icon: mdi:thermometer
+multiline_secondary: true
+tap_action:
+  action: navigate
+  navigation_path: /lovelace/temprature-alarm
+grid_options:
+  columns: 12
+  rows: 2
+color: >-
+  {% set t = states('sensor.kuhlschrank_wohnungeg_kuche_temperature') | float(0)
+  %}
+    {% if t >= 12 %}#eb4d54
+    {% elif t >= 10 %}#1db954
+    {% elif t >= 2 %}#3a8df7
+    {% else %}#3a8df7{% endif %}
+features_position: bottom

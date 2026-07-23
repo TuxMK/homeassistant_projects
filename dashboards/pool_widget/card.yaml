@@ -1,0 +1,22 @@
+# Pool-Widget für Übersichts-Dashboard
+# Zeigt Pool-Temperatur und Pumpenstatus an und verlinkt auf die Pool-Ansicht.
+#
+# Voraussetzungen:
+# - sensor.pool_pumpe_temperatur, binary_sensor.pool_pumpe_betriebszustand
+# - Mushroom Cards (via HACS installieren)
+
+type: custom:mushroom-template-card
+primary: |
+  Pool {{ states('sensor.pool_pumpe_temperatur') | round(1) }} °C
+secondary: |
+  {% if is_state('binary_sensor.pool_pumpe_betriebszustand', 'on') %}Pumpe läuft
+  {% else %}Pumpe aus{% endif %}
+icon: mdi:pool
+icon_color: teal
+multiline_secondary: true
+tap_action:
+  action: navigate
+  navigation_path: /lovelace/pool
+grid_options:
+  columns: 6
+  rows: 2

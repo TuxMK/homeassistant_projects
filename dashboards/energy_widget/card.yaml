@@ -1,0 +1,63 @@
+# Energie-Widget für Übersichts-Dashboard
+# Zeigt PV-Erzeugung, Netzbezug/-einspeisung und Akku-Ladestand an
+# und verlinkt auf die Energie-Ansicht.
+#
+# Voraussetzungen:
+# - SENEC-Integration mit den solaranlage_senec_home_v3_hybrid_duo_*-Entities
+# - Mushroom Cards (via HACS installieren)
+
+type: custom:mushroom-template-card
+primary: Energie
+secondary: >
+  {% set pv =
+  states('sensor.solaranlage_senec_home_v3_hybrid_duo_solar_generated_power') |
+  float(0) %}
+
+  {% set imp =
+  states('sensor.solaranlage_senec_home_v3_hybrid_duo_grid_imported_power') |
+  float(0) %}
+
+  {% set exp =
+  states('sensor.solaranlage_senec_home_v3_hybrid_duo_grid_exported_power') |
+  float(0) %}
+
+  {% set soc =
+  states('sensor.solaranlage_senec_home_v3_hybrid_duo_battery_charge_percent') |
+  float(0) %}
+
+  PV {{ (pv/1000) | round(1) }} kW · {% if exp > imp %}Einsp. {{ (exp/1000) |
+  round(1) }} kW{% else %}Bezug {{ (imp/1000) | round(1) }} kW{% endif %} · Akku
+  {{ soc | round(0) }} %
+icon: mdi:lightning-bolt
+color: |
+  orange
+multiline_secondary: true
+tap_action:
+  action: navigate
+  navigation_path: /lovelace/energy
+grid_options:
+  columns: 6
+  rows: 2
+features_position: bottom
+badge_icon: >-
+  {% set imp =
+  states('sensor.solaranlage_senec_home_v3_hybrid_duo_grid_imported_power') |
+  float(0) %}
+            {% set exp = states('sensor.solaranlage_senec_home_v3_hybrid_duo_grid_exported_power') | float(0) %}
+            {% set dis = states('sensor.solaranlage_senec_home_v3_hybrid_duo_battery_discharge_power') | float(0) %}
+            {% if exp > 200 %}mdi:transmission-tower-import
+            {% elif imp > 3000 %}mdi:transmission-tower-export
+            {% elif imp > 200 %}mdi:transmission-tower-export
+            {% elif dis > 200 %}mdi:battery-charging-high
+            {% else %}mdi:solar-power{% endif %}
+badge_color: >-
+  {% set imp =
+  states('sensor.solaranlage_senec_home_v3_hybrid_duo_grid_imported_power') |
+  float(0) %}
+            {% set exp = states('sensor.solaranlage_senec_home_v3_hybrid_duo_grid_exported_power') | float(0) %}
+            {% set dis = states('sensor.solaranlage_senec_home_v3_hybrid_duo_battery_discharge_power') | float(0) %}
+            {% if exp > 200 %}green
+            {% elif imp > 3000 %}red
+            {% elif imp > 200 %}orange
+            {% elif dis > 200 %}light-green
+            {% else %}green{% endif %}

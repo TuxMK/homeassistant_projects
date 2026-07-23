@@ -1,0 +1,17 @@
+# Statistik-Widget für Übersichts-Dashboard
+# Verlinkt auf die Energie-/Statistik-Ansicht.
+#
+# Voraussetzung:
+# - Mushroom Cards (via HACS installieren)
+
+type: custom:mushroom-template-card
+primary: Statistik & Historie
+secondary: Verbrauch, Erzeugung und Verläufe öffnen
+icon: mdi:chart-box
+icon_color: blue
+tap_action:
+  action: navigate
+  navigation_path: /energy
+grid_options:
+  columns: 6
+  rows: 2

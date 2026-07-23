@@ -1,21 +1,21 @@
 # Sicherheits-Dashboard
 
-Ein vollstaendiges Dashboard fuer die Sicherheitsueberwachung mit zentralen Entity-Listen.
+Ein vollständiges Dashboard für die Sicherheitsüberwachung mit zentralen Entity-Listen.
 
 ## Features
 
 - Alarm-Panel Steuerung (Einbruch, Feuer/CO, Leckage) via Mushroom-Cards
-- Status-Badge fuer den Gesamtstatus (`sensor.sicherheitsstatus`)
+- Status-Badge für den Gesamtstatus (`sensor.sicherheitsstatus`)
 - Dynamische Entity-Listen aus `sensor.sicherheitsstatus`
-- Farbcodierung je nach Status (gruen/gelb/orange/rot, unbekannt = grau)
+- Farbcodierung je nach Status (grün/gelb/orange/rot, unbekannt = grau)
 - Zentrale Pattern-Definition (keine Duplikate)
 
 ## Voraussetzungen
 
 - Template-Sensor `sensor.sicherheitsstatus` (siehe [templates/security_status/](../../templates/security_status/))
 - [auto-entities](https://github.com/thomasloven/lovelace-auto-entities) (via HACS)
-- [card-mod](https://github.com/thomasloven/lovelace-card-mod) (via HACS, fuer Farbcodierung)
-- [Mushroom](https://github.com/piitaya/lovelace-mushroom) (via HACS, fuer Alarm-Panels, Probealarm-Select und Status-Badge)
+- [card-mod](https://github.com/thomasloven/lovelace-card-mod) (via HACS, für Farbcodierung)
+- [Mushroom](https://github.com/piitaya/lovelace-mushroom) (via HACS, für Alarm-Panels, Probealarm-Select und Status-Badge)
 
 ## Verwendung der Entity-Listen
 
@@ -84,21 +84,21 @@ filter:
 
 ## Anpassung
 
-### Neue Geraetekategorie hinzufuegen
+### Neue Gerätekategorie hinzufügen
 
 1. Pattern in `security_entities.jinja` definieren
-2. Attribut in `sensor.yaml` hinzufuegen
+2. Attribut in `sensor.yaml` hinzufügen
 3. Im Dashboard referenzieren
 
 ### Schwellwerte anpassen
 
-Die Schwellwerte fuer Farben sind im Dashboard definiert und koennen dort angepasst werden:
+Die Schwellwerte für Farben sind im Dashboard definiert und können dort angepasst werden:
 
 ```yaml
-# Batterie: > 50% gruen, > 25% orange, sonst rot
+# Batterie: > 50% grün, > 25% orange, sonst rot
 'green' if states(e)|float(0) > 50 else 'orange' if states(e)|float(0) > 25 else 'red'
 
-# CO: < 30 gruen, < 50 gelb, < 100 orange, sonst rot
+# CO: < 30 grün, < 50 gelb, < 100 orange, sonst rot
 'green' if states(e)|float(0) < 30 else 'yellow' if states(e)|float(0) < 50 else 'orange' if states(e)|float(0) < 100 else 'red'
 ```
 

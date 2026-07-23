@@ -27,8 +27,16 @@ Eine Sammlung von Blueprints, Konfigurationen, Skripten und anderen Ressourcen a
 
 | Name | Beschreibung |
 |------|--------------|
-| [Security Widget](dashboards/security_widget/) | Kompaktes Widget fuer das Uebersichts-Dashboard mit Sicherheitsstatus und Link zur Detail-Ansicht |
-| [Security View](dashboards/security_view/) | Vollstaendiges Sicherheits-Dashboard mit dynamischen Entity-Listen |
+| [Security View](dashboards/security_view/) | Vollständiges Sicherheits-Dashboard mit dynamischen Entity-Listen |
+| [Security Widget](dashboards/security_widget/) | Kompaktes Widget für das Übersichts-Dashboard mit Sicherheitsstatus und Link zur Detail-Ansicht |
+| [Wallbox Widget](dashboards/wallbox_widget/) | evcc-Wallbox: Lade-/Anschlussstatus, SoC, Ladeziel und PV-Anteil |
+| [Energy Widget](dashboards/energy_widget/) | SENEC-Energiefluss: PV-Erzeugung, Netzbezug/-einspeisung und Akku-Ladestand |
+| [Weather Widget](dashboards/weather_widget/) | Aktuelle Wetterlage (Zustand, Temperatur, Wind) mit passendem Icon |
+| [Temperature Widget](dashboards/temperature_widget/) | Temperaturen der Kühl-/Gefrierschränke mit Schwellwert-Farbe |
+| [Pool Widget](dashboards/pool_widget/) | Pool-Temperatur und Pumpenstatus |
+| [Waste Widget](dashboards/waste_widget/) | Nächste Müllabholung mit Abfallart-Icon und Link zum Abfallkalender |
+| [Statistics Widget](dashboards/statistics_widget/) | Navigations-Button zur Statistik-/Energie-Ansicht |
+| [Billing Widget](dashboards/billing_widget/) | Navigations-Button zum Abrechnungs-Dashboard (Strom & Gas) |
 
 ### Zigbee2MQTT
 
