@@ -25,29 +25,37 @@ secondary: |
   ] %}
   {% set ns = namespace(lines=[]) %}
   {% for wb in wallboxes %}
+    {# Werte, die evcc/HA für "kein bekanntes Fahrzeug" liefern kann —
+       bei einem Gastfahrzeug meldet evcc z. B. 'null'. #}
+    {% set leer = ['', 'none', 'null', 'nil', 'unknown', 'unavailable'] %}
     {# Anzeigename aus dem verschachtelten 'vehicle'-Attribut (Dict) der evcc-Auswahl,
        z. B. "Skoda Elroq von Max" — unabhängig vom technischen state (z. B. "db:11"). #}
     {% set info = state_attr(wb.vehicle, 'vehicle') %}
-    {% set vname = info.name if (info is mapping and info.name is defined) else none %}
+    {% set vname = info.name if (info is mapping and info.name is string) else none %}
     {% set raw = states(wb.vehicle) %}
-    {% if vname not in [none, 'None', '', 'unknown', 'unavailable'] %}
-      {% set car = vname %}
-    {% elif raw in ['unknown', 'unavailable', 'none', 'None', ''] %}
-      {% set car = 'kein Fahrzeug' %}
+    {% if vname is string and vname | trim | lower not in leer %}
+      {% set car = vname | trim %}
+    {% elif raw is string and raw | trim | lower not in leer %}
+      {% set car = raw | trim %}
+    {% elif is_state(wb.connected, 'on') %}
+      {# Angesteckt, aber von evcc keinem Fahrzeug zugeordnet #}
+      {% set car = 'Gastfahrzeug' %}
     {% else %}
-      {% set car = raw %}
+      {% set car = 'kein Fahrzeug' %}
     {% endif %}
     {% set soc = states(wb.soc) | float(0) | round(0) %}
     {% set lim = states(wb.limit) | float(0) | round(0) %}
     {% set vlim = states(wb.vehiclelimit) | float(0) | round(0) %}
-    {# evcc-Ladeziel, optional ergänzt um das vom Fahrzeug gemeldete Limit #}
-    {% set target = lim ~ '%' ~ (' / ' ~ vlim ~ '%' if vlim > 0 else '') %}
+    {# evcc-Ladeziel, optional ergänzt um das vom Fahrzeug gemeldete Limit.
+       Beim Gastfahrzeug fehlen beide Werte -> Ladeziel wird weggelassen. #}
+    {% set target = [(lim ~ '%') if lim > 0 else none,
+                     (vlim ~ '%') if vlim > 0 else none] | reject('none') | join(' / ') %}
+    {% set socinfo = (' · ' ~ soc ~ '%' ~ ('→' ~ target if target else '')) if soc > 0 else '' %}
     {% if is_state(wb.charging, 'on') %}
       {% set kw = (states(wb.power) | float(0) / 1000) | round(1) %}
       {% set pv = states(wb.pv) | float(0) | round(0) %}
-      {% set ns.lines = ns.lines + [car ~ ': ' ~ kw ~ 'kW · ' ~ soc ~ '%→' ~ target ~ ' · PV ' ~ pv ~ '%'] %}
+      {% set ns.lines = ns.lines + [car ~ ': ' ~ kw ~ 'kW' ~ socinfo ~ ' · PV ' ~ pv ~ '%'] %}
     {% elif is_state(wb.connected, 'on') %}
-      {% set socinfo = (' · ' ~ soc ~ '%→' ~ target) if soc > 0 else '' %}
       {% set ns.lines = ns.lines + [wb.name ~ ': ' ~ car ~ ' angesteckt, lädt nicht' ~ socinfo] %}
     {% else %}
       {% set ns.lines = ns.lines + [wb.name ~ ': frei'] %}

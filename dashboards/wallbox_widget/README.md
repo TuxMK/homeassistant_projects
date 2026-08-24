@@ -9,6 +9,7 @@ und auf das evcc-Dashboard verlinkt.
 - Farbcodierung (Primary/Orange/Grau) und Blitz-Badge während des Ladens
 - Ladeleistung, SoC → Ladeziel und PV-Anteil auf einen Blick
 - Fahrzeugname wird lesbar aufbereitet (z. B. `db:11` → `Skoda Elroq`)
+- Unbekannte Fahrzeuge werden als `Gastfahrzeug` angezeigt (kein `null`)
 - Mehrere Wallboxen über eine Liste erweiterbar
 - Klick-Navigation zum evcc-Dashboard
 
@@ -63,14 +64,24 @@ Der Anzeigename wird automatisch aus dem verschachtelten `vehicle`-Attribut der
 
 ```jinja
 {% set info = state_attr(wb.vehicle, 'vehicle') %}
-{% set vname = info.name if (info is mapping and info.name is defined) else none %}
+{% set vname = info.name if (info is mapping and info.name is string) else none %}
 ```
 
 Damit ist kein manuelles Mapping nötig — der Name folgt dem in evcc
 hinterlegten Fahrzeug-Titel, auch nach einem Neu-Einbinden. Der technische
-`state` (z. B. `db:11`) wird ignoriert. Ist kein Fahrzeug ausgewählt
-(`vehicle`-Attribut leer bzw. `state` `unknown`/`unavailable`), erscheint
-`kein Fahrzeug`.
+`state` (z. B. `db:11`) wird ignoriert.
+
+Liefern weder Attribut noch `state` einen Namen (`''`, `none`, `null`, `nil`,
+`unknown`, `unavailable`), hängt die Anzeige am Anschlussstatus:
+
+| Situation | Anzeige |
+|-----------|---------|
+| Angesteckt, evcc kennt das Fahrzeug nicht (z. B. Gastfahrzeug → `null`) | `Gastfahrzeug` |
+| Nicht angesteckt | `kein Fahrzeug` |
+
+Beim Gastfahrzeug meldet evcc in der Regel kein Ladeziel (`limit_soc` = 0) und
+oft auch keinen SoC — diese Teile der Zeile entfallen dann automatisch, statt
+`0%` oder `null` anzuzeigen.
 
 ### Navigation-Pfad
 
