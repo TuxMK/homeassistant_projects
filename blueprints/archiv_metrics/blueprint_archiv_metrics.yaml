@@ -1,59 +1,59 @@
 blueprint:
-  name: Metrics / Records archivieren — Zählerstände archivieren
+  name: Metrics Archive (MariaDB) — archive sensor records
   description: >
-    # Metrics / Records archivieren — Zählerstände archivieren
+    # Metrics Archive (MariaDB) — archive sensor records
 
     **Version: 1.1**
 
 
-    Schreibt Sensorwerte über den pyscript-Connector `pyscript.sql_execute` in eine
-    eigene MariaDB-Datenbank (Langzeitarchiv als Ersatz für die InfluxDB-Integration).
+    Writes sensor values into a dedicated MariaDB database through the pyscript
+    connector `pyscript.sql_execute` (long-term archive, replacing the InfluxDB
+    integration).
 
 
-    Entitäten, Datenbank, Tabelle, Login, Host und Port werden vollständig hier in der
-    Automatisierung gesetzt — im Blueprint und im Connector ist nichts davon fest
-    verdrahtet. Dieselbe Vorlage lässt sich dadurch mehrfach verwenden, etwa mit
-    unterschiedlichen Tabellen oder Intervallen je Sensorgruppe.
+    Entities, database, table, login, host and port are all configured here in the
+    automation — nothing of that is hardcoded in the blueprint or in the connector.
+    The same blueprint can therefore be used several times, for example with
+    different tables or intervals per group of sensors.
 
 
     <details>
-    <summary><b>Schreiblogik</b></summary>
+    <summary><b>Write logic</b></summary>
 
-      - **Erste Änderung nach einer Ruhephase:** wird sofort geschrieben.
-      - **Weitere Änderungen innerhalb des Intervalls:** werden gesammelt, nach Ablauf
-        des Intervalls wird nur der **neueste** Wert geschrieben.
-      - **Keine Änderung:** es wird nichts geschrieben.
+      - **First change after a quiet period:** written immediately.
+      - **Further changes within the interval:** collected, and only the **latest**
+        value is written once the interval has elapsed.
+      - **No change:** nothing is written.
 
-      Alle fälligen Werte eines Durchlaufs gehen als **ein einziger** INSERT mit
-      mehrzeiligem `VALUES` zur Datenbank — eine Verbindung je Durchlauf statt
-      einer je Wert.
+      All due values of a run go to the database as **one single** INSERT with a
+      multi-row `VALUES` clause — one connection per run instead of one per value.
 
-      Als Zeitstempel wird immer der echte `last_changed` der Entität gespeichert (UTC),
-      nicht der Zeitpunkt des Schreibens.
+      The stored timestamp is always the entity's real `last_changed` (UTC), never
+      the moment of writing.
     </details>
 
 
     <details>
-    <summary><b>Voraussetzungen</b></summary>
+    <summary><b>Requirements</b></summary>
 
-      - MariaDB-Add-on mit eigener Datenbank (z. B. `ha_metrics`) und Zieltabelle.
-      - pyscript (HACS) mit der App `ha_mysql.py` und einem Login in der
-        `configuration.yaml` (Benutzername/Passwort via `secrets.yaml`).
-      - Die Tabelle braucht den Primärschlüssel `(entity_id, ts)`.
+      - MariaDB add-on with its own database (e. g. `ha_metrics`) and target table.
+      - pyscript (HACS) with the app `ha_mysql.py` and a login in the
+        `configuration.yaml` (username/password via `secrets.yaml`).
+      - The table needs the primary key `(entity_id, ts)`.
 
-      Details und das `CREATE TABLE` stehen in der README des Blueprints.
+      Details and the `CREATE TABLE` statement are in the blueprint's README.
     </details>
   domain: automation
   input:
     quelle:
-      name: Quelle
+      name: Source
       icon: mdi:counter
       input:
         entities:
-          name: Entitäten
+          name: Entities
           description: >
-            Die zu archivierenden Sensoren. Nicht-numerische Zustände
-            (`unknown`, `unavailable`, Text) werden übersprungen.
+            The sensors to archive. Non-numeric states
+            (`unknown`, `unavailable`, text) are skipped.
           selector:
             entity:
               multiple: true
@@ -61,95 +61,94 @@ blueprint:
                 - domain: sensor
 
     ziel:
-      name: Ziel
+      name: Target
       icon: mdi:database
       input:
         database:
-          name: Datenbank
+          name: Database
           description: >
-            Name der Datenbank in MariaDB, in die geschrieben wird.
+            Name of the MariaDB database that is written to.
           default: ha_metrics
           selector:
             text:
         table:
-          name: Tabelle
+          name: Table
           description: >
-            Zieltabelle mit den Spalten `entity_id`, `ts`, `value`, `unit`
-            und dem Primärschlüssel `(entity_id, ts)`.
+            Target table with the columns `entity_id`, `ts`, `value`, `unit`
+            and the primary key `(entity_id, ts)`.
           default: states
           selector:
             text:
         login:
           name: Login
           description: >
-            Name des Logins aus der pyscript-App-Konfiguration (z. B. `archiv`).
-            Damit wählst du, mit welchem Datenbankbenutzer geschrieben wird.
-            Leer lassen, um den dort hinterlegten `default_login` zu verwenden.
+            Name of the login from the pyscript app configuration (e. g. `archiv`).
+            It selects the database user that is used for writing.
+            Leave empty to use the `default_login` configured there.
           default: ""
           selector:
             text:
 
     verhalten:
-      name: Schreibverhalten
+      name: Write behavior
       icon: mdi:timer-cog-outline
       collapsed: true
       input:
         throttle_seconds:
-          name: Mindestabstand
+          name: Minimum spacing
           description: >
-            Mindestabstand zwischen zwei archivierten Werten derselben Entität
-            (in Sekunden). 10 = höchstens ein Wert alle 10 Sekunden und Entität,
-            60 = höchstens einer pro Minute. Bestimmt direkt, wie schnell die
-            Tabelle wächst.
+            Minimum spacing between two archived values of the same entity
+            (in seconds). 10 = at most one value every 10 seconds per entity,
+            60 = at most one per minute. This directly determines how fast the
+            table grows.
           default: 10
           selector:
             number:
               min: 10
               max: 3600
               step: 10
-              unit_of_measurement: Sekunden
+              unit_of_measurement: seconds
               mode: box
         write_immediately:
-          name: Erste Änderung sofort schreiben
+          name: Write first change immediately
           description: >
-            Schreibt die erste Änderung nach einer Ruhephase ohne Verzögerung.
-            Ausgeschaltet werden alle Werte erst beim nächsten Intervall-Lauf
-            geschrieben.
+            Writes the first change after a quiet period without delay.
+            When turned off, every value is written by the next sweep run only.
           default: true
           selector:
             boolean:
         sweep_seconds:
-          name: Intervall-Lauf
+          name: Sweep interval
           description: >
-            Wie oft die gesammelten Änderungen nachgetragen werden (in Sekunden).
-            Bestimmt die Genauigkeit des Mindestabstands — ein Wert kleiner oder
-            gleich dem Mindestabstand ist sinnvoll. Der Takt muss 60 Sekunden
-            gleichmäßig teilen, deshalb eine feste Auswahl statt einer freien Zahl.
+            How often collected changes are written (in seconds). Determines the
+            accuracy of the minimum spacing — a value less than or equal to the
+            minimum spacing makes sense. The interval has to divide 60 seconds
+            evenly, hence a fixed list instead of a free number.
           default: "/10"
           selector:
             select:
               options:
-                - label: Alle 5 Sekunden
+                - label: Every 5 seconds
                   value: "/5"
-                - label: Alle 10 Sekunden
+                - label: Every 10 seconds
                   value: "/10"
-                - label: Alle 15 Sekunden
+                - label: Every 15 seconds
                   value: "/15"
-                - label: Alle 20 Sekunden
+                - label: Every 20 seconds
                   value: "/20"
-                - label: Alle 30 Sekunden
+                - label: Every 30 seconds
                   value: "/30"
-                - label: Alle 60 Sekunden
+                - label: Every 60 seconds
                   value: "0"
 
     verbindung:
-      name: Verbindung (erweitert)
+      name: Connection (advanced)
       icon: mdi:lan-connect
       collapsed: true
       input:
         host:
           name: Host
-          description: Datenbank-Host. Innerhalb von Home Assistant `core-mariadb`.
+          description: Database host. Inside Home Assistant `core-mariadb`.
           default: core-mariadb
           selector:
             text:
@@ -168,10 +167,10 @@ max_exceeded: silent
 triggers:
   - trigger: state
     entity_id: !input entities
-    id: aenderung
+    id: change
   - trigger: time_pattern
     seconds: !input sweep_seconds
-    id: intervall
+    id: sweep
 
 variables:
   entities: !input entities
@@ -181,20 +180,20 @@ variables:
   host: !input host
   port: !input port
   throttle: !input throttle_seconds
-  sofort: !input write_immediately
+  immediate: !input write_immediately
 
-  # Backticks im Tabellennamen entfernen, damit der Name sicher in das SQL passt
-  tabelle: "{{ table | replace('`', '') }}"
+  # Strip backticks from the table name so it can safely go into the SQL
+  table_name: "{{ table | replace('`', '') }}"
 
-  # Welche Entitäten in diesem Lauf geprüft werden:
-  #   Intervall-Lauf  -> alle verfügbaren Entitäten
-  #   Zustandswechsel -> nur die ausgeloeste Entität, und nur wenn der vorherige
-  #                      Wert mindestens den Mindestabstand lang stabil war
-  #                      (dann ist er sicher bereits archiviert)
-  kandidaten: >-
-    {%- if trigger.id == 'intervall' -%}
+  # Which entities are checked in this run:
+  #   sweep run    -> every available entity
+  #   state change -> only the entity that triggered, and only if the previous
+  #                   value was stable for at least the minimum spacing
+  #                   (then it is certainly archived already)
+  candidates: >-
+    {%- if trigger.id == 'sweep' -%}
       {{ entities | select('has_value') | list }}
-    {%- elif sofort and trigger.from_state is not none
+    {%- elif immediate and trigger.from_state is not none
              and (trigger.to_state.last_changed
                   - trigger.from_state.last_changed).total_seconds() >= throttle -%}
       {{ [trigger.entity_id] }}
@@ -204,9 +203,9 @@ variables:
 
 actions:
   - condition: template
-    value_template: "{{ kandidaten | count > 0 }}"
+    value_template: "{{ candidates | count > 0 }}"
 
-  # Letzten archivierten Zeitstempel je Entität holen (ein einziger SELECT)
+  # Fetch the last archived timestamp per entity (one single SELECT)
   - action: pyscript.sql_execute
     data:
       login: !input login
@@ -215,34 +214,34 @@ actions:
       port: !input port
       query: >-
         SELECT entity_id, UNIX_TIMESTAMP(MAX(ts)) AS last_ts
-        FROM `{{ tabelle }}`
-        WHERE entity_id IN ({{ (['%s'] * (kandidaten | count)) | join(', ') }})
+        FROM `{{ table_name }}`
+        WHERE entity_id IN ({{ (['%s'] * (candidates | count)) | join(', ') }})
         GROUP BY entity_id
-      params: "{{ kandidaten }}"
-    response_variable: archiv
+      params: "{{ candidates }}"
+    response_variable: archive
 
   - condition: template
-    value_template: "{{ archiv.ok | default(false) }}"
+    value_template: "{{ archive.ok | default(false) }}"
 
   - variables:
-      letzte: >-
+      archived: >-
         {%- set ns = namespace(m={}) -%}
-        {%- for r in archiv.rows | default([], true) -%}
+        {%- for r in archive.rows | default([], true) -%}
           {%- set ns.m = dict(ns.m, **{r.entity_id: r.last_ts}) -%}
         {%- endfor -%}
         {{ ns.m }}
 
-  # Faellige Zeilen sammeln: je Eintrag [entity_id, ts, value, unit]
-  #   - Zustand muss numerisch sein
-  #   - noch nichts archiviert  -> schreiben
-  #   - sonst nur, wenn es etwas Neues gibt (ts > last_ts) und der
-  #     Mindestabstand seit dem letzten archivierten Wert vergangen ist
+  # Collect the due rows: one entry [entity_id, ts, value, unit] each
+  #   - the state has to be numeric
+  #   - nothing archived yet -> write
+  #   - otherwise only if there is something new (ts > last_ts) and the
+  #     minimum spacing has passed since the last archived value
   - variables:
-      zeilen: >-
+      due_rows: >-
         {%- set ns = namespace(rows=[]) -%}
-        {%- for e in kandidaten -%}
+        {%- for e in candidates -%}
           {%- set wert = states(e) -%}
-          {%- set last_ts = letzte.get(e) -%}
+          {%- set last_ts = archived.get(e) -%}
           {%- set ts = as_timestamp(states[e].last_changed) -%}
           {%- if is_number(wert)
                  and (last_ts is none
@@ -258,9 +257,9 @@ actions:
         {{ ns.rows }}
 
   - condition: template
-    value_template: "{{ zeilen | count > 0 }}"
+    value_template: "{{ due_rows | count > 0 }}"
 
-  # Ein einziger INSERT mit mehrzeiligem VALUES fuer alle faelligen Werte
+  # One single INSERT with a multi-row VALUES clause for all due values
   - action: pyscript.sql_execute
     continue_on_error: true
     data:
@@ -269,7 +268,7 @@ actions:
       host: !input host
       port: !input port
       query: >-
-        INSERT INTO `{{ tabelle }}` (entity_id, ts, value, unit)
-        VALUES {{ (['(%s, %s, %s, %s)'] * (zeilen | count)) | join(', ') }}
+        INSERT INTO `{{ table_name }}` (entity_id, ts, value, unit)
+        VALUES {{ (['(%s, %s, %s, %s)'] * (due_rows | count)) | join(', ') }}
         ON DUPLICATE KEY UPDATE value = VALUES(value), unit = VALUES(unit)
-      params: "{{ zeilen | sum(start=[]) }}"
+      params: "{{ due_rows | sum(start=[]) }}"
