@@ -12,7 +12,7 @@ login, host, port, minimum spacing and sweep interval. None of it is hardcoded i
 blueprint, the values shown are only defaults. The same blueprint can therefore be used
 several times, for example with separate tables or intervals per group of sensors.
 
-**Version: 1.1**
+**Version: 1.2**
 
 ## Features
 
@@ -36,15 +36,23 @@ several times, for example with separate tables or intervals per group of sensor
 
 This works without helper entities: the archive itself is the state store.
 
-1. **State change of an entity.** The blueprint checks whether the *previous* value was
-   stable for at least the minimum spacing. Only then was it certainly archived already,
-   which makes the new change the "first one after the quiet period" — it is written
-   immediately. Rapid successions of changes, on the other hand, cause no database
-   access at all.
-2. **Sweep run.** A `SELECT entity_id, UNIX_TIMESTAMP(MAX(ts))` returns the last
-   archived timestamp for every entity. An entity is written only if its `last_changed`
-   is newer than the archived timestamp (so there actually is something new) **and** at
-   least the minimum spacing has passed since the last archived value.
+Every run — no matter whether a state change or the sweep started it — looks at **all**
+entities. A `SELECT entity_id, UNIX_TIMESTAMP(MAX(ts))` returns the last archived
+timestamp for each of them, and an entity is written only if its `last_changed` is newer
+than that timestamp (so there actually is something new) **and** at least the minimum
+spacing has passed since the last archived value.
+
+That is what produces the three rules above: after a quiet period the last archived value
+is older than the minimum spacing, so the change is written right away; during a busy
+phase the spacing blocks the write until a later run picks up whatever value is current
+by then; and an entity that has not changed never passes the "something new" test.
+
+**Why every run covers every entity:** sensors frequently change within the same
+millisecond — a sum sensor updates the very instant one of its sources does. The
+automation runs in mode `single`, so those near-simultaneous triggers are dropped. If a
+run only wrote for the entity that triggered it, a derived sensor would lose its slot
+every single time and would never be archived at all. Because any run writes on behalf of
+everyone, it no longer matters which trigger wins the race.
 
 This way the final reading of a charging session is not lost either: once the wallbox
 stops counting, the next sweep run adds the last value.

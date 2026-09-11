@@ -3,7 +3,7 @@ blueprint:
   description: >
     # Metrics Archive (MariaDB) — archive sensor records
 
-    **Version: 1.1**
+    **Version: 1.2**
 
 
     Writes sensor values into a dedicated MariaDB database through the pyscript
@@ -185,18 +185,15 @@ variables:
   # Strip backticks from the table name so it can safely go into the SQL
   table_name: "{{ table | replace('`', '') }}"
 
-  # Which entities are checked in this run:
-  #   sweep run    -> every available entity
-  #   state change -> only the entity that triggered, and only if the previous
-  #                   value was stable for at least the minimum spacing
-  #                   (then it is certainly archived already)
+  # Which entities are checked in this run: always all of them, no matter what
+  # triggered. Sensors commonly change in the same millisecond - a sum sensor
+  # follows its sources instantly - and mode single would drop those triggers.
+  # Whichever run gets through therefore writes on behalf of every entity; what
+  # is actually written is decided by the minimum spacing further down.
+  # A state change only starts a run at all when immediate writing is enabled.
   candidates: >-
-    {%- if trigger.id == 'sweep' -%}
-      {{ entities | select('has_value') | list }}
-    {%- elif immediate and trigger.from_state is not none
-             and (trigger.to_state.last_changed
-                  - trigger.from_state.last_changed).total_seconds() >= throttle -%}
-      {{ [trigger.entity_id] }}
+    {%- if trigger.id == 'sweep' or immediate -%}
+      {{ entities }}
     {%- else -%}
       {{ [] }}
     {%- endif -%}
