@@ -82,7 +82,7 @@ blueprint:
         login:
           name: Login
           description: >
-            Name of the login from the pyscript app configuration (e. g. `archiv`).
+            Name of the login from the pyscript app configuration (e. g. `homeassistant`).
             It selects the database user that is used for writing.
             Leave empty to use the `default_login` configured there.
           default: ""

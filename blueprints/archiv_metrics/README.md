@@ -1,76 +1,74 @@
-# SQL-Archiv (MariaDB)
+# Metrics Archive (MariaDB)
 
-Home Assistant Blueprint, der Sensorwerte über den pyscript-Connector
-`pyscript.sql_execute` in eine eigene MariaDB-Datenbank schreibt.
+Home Assistant blueprint that writes sensor values into a dedicated MariaDB database
+through the pyscript connector `pyscript.sql_execute`.
 
-Gedacht als Ersatz für die InfluxDB-Integration: Die Langzeitdaten liegen danach in
-einer normalen SQL-Datenbank, lassen sich mit `mysqldump` sichern, in phpMyAdmin
-korrigieren und in Grafana über die MySQL-Datenquelle auswerten.
+Meant as a replacement for the InfluxDB integration: the long-term data then lives in
+a plain SQL database, can be backed up with `mysqldump`, corrected in phpMyAdmin and
+queried in Grafana through the MySQL data source.
 
-Alles Fachliche wird in der Automatisierung gesetzt — Entitäten, Datenbank, Tabelle,
-Login, Host, Port, Mindestabstand und Intervall. Im Blueprint steht davon nichts fest,
-die angegebenen Werte sind nur Vorbelegungen. Dieselbe Vorlage lässt sich deshalb
-mehrfach verwenden, etwa mit getrennten Tabellen oder Intervallen je Sensorgruppe.
+Everything domain specific is configured in the automation — entities, database, table,
+login, host, port, minimum spacing and sweep interval. None of it is hardcoded in the
+blueprint, the values shown are only defaults. The same blueprint can therefore be used
+several times, for example with separate tables or intervals per group of sensors.
 
 **Version: 1.1**
 
 ## Features
 
-- Archiviert beliebig viele Sensoren, die Auswahl erfolgt in der Automatisierung
-- Schreibt den echten Änderungszeitpunkt (`last_changed`, UTC), nicht den Schreibzeitpunkt
-- Drosselung je Entität: höchstens ein Wert pro Intervall, der **neueste** gewinnt
-- Erste Änderung nach einer Ruhephase wird ohne Verzögerung geschrieben
-- Keine Änderung, kein Schreibvorgang — auch keine leeren Durchläufe
-- Nicht-numerische Zustände (`unknown`, `unavailable`, Text) werden übersprungen
-- Datenbank, Tabelle, Login, Host und Port kommen komplett aus der Automatisierung
-- Ein einziger `SELECT` und ein einziger `INSERT` je Durchlauf, unabhängig von der
-  Anzahl der Entitäten
+- Archives any number of sensors, selected in the automation
+- Stores the real moment of change (`last_changed`, UTC), not the moment of writing
+- Throttling per entity: at most one value per interval, the **latest** one wins
+- The first change after a quiet period is written without delay
+- No change, no write — and no empty runs either
+- Non-numeric states (`unknown`, `unavailable`, text) are skipped
+- Database, table, login, host and port come entirely from the automation
+- One single `SELECT` and one single `INSERT` per run, regardless of the number of
+  entities
 
-## Schreiblogik
+## Write logic
 
-| Situation | Verhalten |
-|-----------|-----------|
-| Erste Änderung nach einer Ruhephase | wird sofort geschrieben |
-| Weitere Änderungen innerhalb des Intervalls | werden gesammelt, nach Ablauf des Intervalls wird nur der neueste Wert geschrieben |
-| Keine Änderung | es wird nichts geschrieben |
+| Situation | Behavior |
+|-----------|----------|
+| First change after a quiet period | written immediately |
+| Further changes within the interval | collected, only the latest value is written once the interval has elapsed |
+| No change | nothing is written |
 
-Umgesetzt wird das ohne Helfer-Entitäten: Das Archiv selbst ist der Zustandsspeicher.
+This works without helper entities: the archive itself is the state store.
 
-1. **Zustandswechsel einer Entität.** Der Blueprint prüft, ob der *vorherige* Wert
-   mindestens den Mindestabstand lang stabil war. Nur dann war er sicher schon
-   archiviert, und die neue Änderung ist die „erste nach der Ruhephase“ — sie wird
-   sofort geschrieben. Änderungen in schneller Folge lösen dagegen keinen
-   Datenbankzugriff aus.
-2. **Intervall-Lauf.** Ein `SELECT entity_id, UNIX_TIMESTAMP(MAX(ts))` liefert für alle
-   Entitäten den letzten archivierten Zeitstempel. Geschrieben wird eine Entität nur,
-   wenn ihr `last_changed` neuer ist als der archivierte Zeitstempel (es gibt also
-   etwas Neues) **und** seit dem letzten archivierten Wert mindestens der
-   Mindestabstand vergangen ist.
+1. **State change of an entity.** The blueprint checks whether the *previous* value was
+   stable for at least the minimum spacing. Only then was it certainly archived already,
+   which makes the new change the "first one after the quiet period" — it is written
+   immediately. Rapid successions of changes, on the other hand, cause no database
+   access at all.
+2. **Sweep run.** A `SELECT entity_id, UNIX_TIMESTAMP(MAX(ts))` returns the last
+   archived timestamp for every entity. An entity is written only if its `last_changed`
+   is newer than the archived timestamp (so there actually is something new) **and** at
+   least the minimum spacing has passed since the last archived value.
 
-Dadurch geht auch der Endstand eines Ladevorgangs nicht verloren: Hört die Wallbox
-auf zu zählen, trägt der nächste Intervall-Lauf den letzten Wert nach.
+This way the final reading of a charging session is not lost either: once the wallbox
+stops counting, the next sweep run adds the last value.
 
-**Hinweis zur Genauigkeit:** Der Mindestabstand wird gegen den Zeitstempel des zuletzt
-archivierten Werts geprüft, nicht gegen den Zeitpunkt des Schreibens. Beim Übergang
-von einer Ruhephase in eine aktive Phase können deshalb einmalig zwei Zeilen dichter
-beieinander liegen. Im Dauerbetrieb bleibt es bei einer Zeile je Intervall und Entität.
+**Note on accuracy:** the minimum spacing is checked against the timestamp of the last
+archived value, not against the moment of writing. When going from a quiet period into
+an active one, two rows can therefore end up closer together once. In continuous
+operation it stays at one row per interval and entity.
 
-## Voraussetzungen
+## Requirements
 
-### 1. MariaDB-Add-on
+### 1. MariaDB add-on
 
-Offizielles MariaDB-Add-on mit einer **eigenen** Datenbank. Der Recorder bleibt dabei
-unangetastet auf SQLite — in der `configuration.yaml` wird unter `recorder:` **kein**
-`db_url` gesetzt.
+Official MariaDB add-on with its **own** database. The recorder stays untouched on
+SQLite — **no** `db_url` is set under `recorder:` in the `configuration.yaml`.
 
 ```yaml
 databases:
   - ha_metrics
 logins:
   - username: homeassistant
-    password: "STARKES_PASSWORT_1"
+    password: "STRONG_PASSWORD_1"
   - username: grafana
-    password: "STARKES_PASSWORT_2"
+    password: "STRONG_PASSWORD_2"
 rights:
   - username: homeassistant
     database: ha_metrics
@@ -80,34 +78,34 @@ rights:
       - SELECT
 ```
 
-### 2. Tabelle
+### 2. Table
 
-Anlegen z. B. über das phpMyAdmin-Add-on:
+Create it for example through the phpMyAdmin add-on:
 
 ```sql
 CREATE TABLE states (
   entity_id VARCHAR(255)  NOT NULL,
-  ts        DATETIME(3)   NOT NULL,                    -- immer UTC
-  value     DOUBLE        NULL,                        -- numerischer Wert
-  state     VARCHAR(255)  NULL,                        -- Rohzustand als Text
+  ts        DATETIME(3)   NOT NULL,                    -- always UTC
+  value     DOUBLE        NULL,                        -- numeric value
+  state     VARCHAR(255)  NULL,                        -- raw state as text
   unit      VARCHAR(32)   NULL,
-  source    VARCHAR(16)   NOT NULL DEFAULT 'ha',       -- ha / import / manuell
+  source    VARCHAR(16)   NOT NULL DEFAULT 'ha',       -- ha / import / manual
   PRIMARY KEY (entity_id, ts)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ```
 
-Der Primärschlüssel `(entity_id, ts)` ist Pflicht: Er sortiert die Daten physisch nach
-Sensor und Zeit und verhindert Duplikate, etwa nach einem Neustart von Home Assistant.
+The primary key `(entity_id, ts)` is mandatory: it sorts the data physically by sensor
+and time and prevents duplicates, for instance after a restart of Home Assistant.
 
-Der Blueprint befüllt `entity_id`, `ts`, `value` und `unit`. `source` bleibt auf dem
-Standardwert `ha`, sodass von Hand korrigierte oder importierte Zeilen später über
-`source = 'manuell'` bzw. `'import'` erkennbar bleiben.
+The blueprint fills `entity_id`, `ts`, `value` and `unit`. `source` stays at its default
+`ha`, so that rows corrected by hand or imported later remain recognizable through
+`source = 'manual'` or `'import'`.
 
-### 3. pyscript-Connector
+### 3. pyscript connector
 
-Der Connector [`ha_mysql.py`](../../pyscript/apps/ha_mysql.py) gehört nach
-`/config/pyscript/apps/ha_mysql.py`, dazu `/config/pyscript/requirements.txt` mit der
-Zeile `PyMySQL`.
+The connector [`ha_mysql.py`](../../pyscript/apps/ha_mysql.py) belongs in
+`/config/pyscript/apps/ha_mysql.py`, together with `/config/pyscript/requirements.txt`
+containing the line `PyMySQL`.
 
 ```yaml
 # configuration.yaml
@@ -122,92 +120,91 @@ pyscript:
           password: !secret archiv_db_password
 ```
 
-Der Name unter `apps:` muss dem Dateinamen entsprechen. Nach einem Neustart steht die
-Aktion **SQL ausführen** (`pyscript.sql_execute`) in den Entwicklerwerkzeugen bereit
-und lässt sich dort mit `SELECT 1` testen.
+The name under `apps:` has to match the file name. After a restart the action
+**Run SQL** (`pyscript.sql_execute`) is available in the developer tools and can be
+tested there with `SELECT 1`.
 
 ## Installation
 
-### Über die UI
+### Through the UI
 
-1. **Einstellungen > Automatisierungen & Szenen > Blueprints**
-2. **Blueprint importieren** klicken
-3. Raw-URL der Datei `blueprint_metrics.yaml` eingeben
+1. **Settings > Automations & scenes > Blueprints**
+2. Click **Import blueprint**
+3. Enter the raw URL of the file `blueprint_archiv_metrics.yaml`
 
-### Manuell
+### Manually
 
-Die Datei nach `/config/blueprints/automation/metrics/` kopieren und in den
-Entwicklerwerkzeugen die Automatisierungen neu laden.
+Copy the file to `/config/blueprints/automation/archiv_metrics/` and reload the
+automations in the developer tools.
 
-## Konfiguration
+## Configuration
 
-Die Spalte „Standard“ zeigt nur die Vorbelegung der Eingabe. Jeder Wert lässt sich je
-Automatisierung überschreiben.
+The "Default" column only shows the preset of the input. Every value can be overridden
+per automation.
 
-### Quelle
+### Source
 
-| Option | Beschreibung | Standard |
-|--------|--------------|----------|
-| Entitäten | Die zu archivierenden Sensoren | — |
+| Option | Description | Default |
+|--------|-------------|---------|
+| Entities | The sensors to archive | — |
 
-### Ziel
+### Target
 
-| Option | Beschreibung | Standard |
-|--------|--------------|----------|
-| Datenbank | Name der Datenbank in MariaDB | `ha_metrics` |
-| Tabelle | Zieltabelle mit Primärschlüssel `(entity_id, ts)` | `states` |
-| Login | Login-Name aus der pyscript-App-Konfiguration, leer = `default_login` | leer |
+| Option | Description | Default |
+|--------|-------------|---------|
+| Database | Name of the database in MariaDB | `ha_metrics` |
+| Table | Target table with primary key `(entity_id, ts)` | `states` |
+| Login | Login name from the pyscript app configuration, empty = `default_login` | empty |
 
-### Schreibverhalten
+### Write behavior
 
-| Option | Beschreibung | Standard |
-|--------|--------------|----------|
-| Mindestabstand | Mindestabstand zwischen zwei archivierten Werten je Entität, in Sekunden | `10` |
-| Erste Änderung sofort schreiben | Schreibt die erste Änderung nach einer Ruhephase ohne Verzögerung | `true` |
-| Intervall-Lauf | Wie oft gesammelte Änderungen nachgetragen werden, in Sekunden | `10` |
+| Option | Description | Default |
+|--------|-------------|---------|
+| Minimum spacing | Minimum spacing between two archived values per entity, in seconds | `10` |
+| Write first change immediately | Writes the first change after a quiet period without delay | `true` |
+| Sweep interval | How often collected changes are written, in seconds | `10` |
 
-Der Intervall-Lauf sollte nicht größer als der Mindestabstand sein, sonst bestimmt er
-den tatsächlichen Abstand der archivierten Werte.
+The sweep interval should not be larger than the minimum spacing, otherwise it
+determines the actual spacing of the archived values.
 
-Der Intervall-Lauf ist eine feste Auswahl (5, 10, 15, 20, 30 oder 60 Sekunden) statt
-einer freien Zahl: Er wird als `time_pattern`-Auslöser umgesetzt, und der muss 60
-Sekunden gleichmäßig teilen. Der Mindestabstand ist dagegen frei in Sekunden wählbar —
-er bestimmt, wie dicht die Werte tatsächlich liegen, und damit direkt das Wachstum der
-Tabelle.
+The sweep interval is a fixed list (5, 10, 15, 20, 30 or 60 seconds) instead of a free
+number: it is implemented as a `time_pattern` trigger, and that one has to divide 60
+seconds evenly. The minimum spacing, in contrast, is free in seconds — it determines how
+densely the values actually sit, and with that the growth of the table.
 
-### Wie viel Speicher das kostet
+### How much storage this costs
 
-Bei rund 116 Byte je Zeile (InnoDB inklusive Seitenfüllgrad) und **10 Entitäten**, die
-sich durchgehend ändern:
+At roughly 116 bytes per row (InnoDB including page fill factor) and **10 entities**
+that change continuously:
 
-| Mindestabstand | Zeilen/Tag | Zeilen/Jahr | pro Jahr | nach 5 Jahren |
+| Minimum spacing | Rows/day | Rows/year | Per year | After 5 years |
 |---|---|---|---|---|
-| 10 s | 86.400 | 31,5 Mio | 3,4 GB | **17,0 GB** |
-| 15 s | 57.600 | 21,0 Mio | 2,3 GB | 11,4 GB |
-| 30 s | 28.800 | 10,5 Mio | 1,1 GB | 5,7 GB |
-| 60 s | 14.400 | 5,3 Mio | 581 MB | 2,8 GB |
-| 300 s | 2.880 | 1,1 Mio | 116 MB | 0,6 GB |
+| 10 s | 86,400 | 31.5 M | 3.4 GB | **17.0 GB** |
+| 15 s | 57,600 | 21.0 M | 2.3 GB | 11.4 GB |
+| 30 s | 28,800 | 10.5 M | 1.1 GB | 5.7 GB |
+| 60 s | 14,400 | 5.3 M | 581 MB | 2.8 GB |
+| 300 s | 2,880 | 1.1 M | 116 MB | 0.6 GB |
 
-Das ist die Obergrenze. In der Praxis liegt es darunter, weil Gas, Wallbox und Pool
-zeitweise stillstehen und dann nichts geschrieben wird.
+That is the upper bound. In practice it stays below, because gas, wallbox and pool are
+idle at times and then nothing is written.
 
-Der Standard von 10 Sekunden ist auf Auflösung ausgelegt, nicht auf Sparsamkeit.
-Wer fünf Jahre aufheben will, sollte entweder den Mindestabstand hochsetzen oder die
-Monatspartitionierung weiter unten einrichten und alte Partitionen verwerfen.
+The default of 10 seconds aims at resolution, not at frugality. Anyone who wants to keep
+five years should either raise the minimum spacing or set up the monthly partitioning
+described below and drop old partitions.
 
-### Verbindung (erweitert)
+### Connection (advanced)
 
-| Option | Beschreibung | Standard |
-|--------|--------------|----------|
-| Host | Datenbank-Host | `core-mariadb` |
-| Port | Datenbank-Port | `3306` |
+| Option | Description | Default |
+|--------|-------------|---------|
+| Host | Database host | `core-mariadb` |
+| Port | Database port | `3306` |
 
-## Beispiel
+## Example
 
-Archiv der Strom-, Gas- und Wallbox-Zähler, minütlich:
+Archive of the electricity, gas and wallbox meters, once a minute:
 
 ```yaml
-alias: Zählerstände ins Archiv
+alias: Meter readings to archive
 use_blueprint:
   path: archiv_metrics/blueprint_archiv_metrics.yaml
   input:
@@ -224,38 +221,37 @@ use_blueprint:
     sweep_seconds: "0"
 ```
 
-Bei fünf Zählern und minütlicher Drosselung entstehen höchstens rund 7.200 Zeilen pro
-Tag, also etwa 291 MB im Jahr und 1,4 GB in fünf Jahren. In der Praxis deutlich
-weniger, weil Gas und Wallbox oft stillstehen.
+With five meters and throttling to one minute this produces at most about 7,200 rows per
+day, so roughly 291 MB per year and 1.4 GB over five years. In practice clearly less,
+because gas and wallbox are often idle.
 
-## Monatspartitionierung
+## Monthly partitioning
 
-Eine partitionierte Tabelle sieht für SQL aus wie eine einzige Tabelle — der Blueprint,
-Grafana und phpMyAdmin merken nichts davon. Intern legt InnoDB pro Partition eine
-eigene Datei an und sortiert jede Zeile anhand von `ts` automatisch in die richtige ein.
+A partitioned table looks like a single table to SQL — the blueprint, Grafana and
+phpMyAdmin notice nothing of it. Internally InnoDB creates one file per partition and
+sorts every row into the right one automatically, based on `ts`.
 
-Das bringt zwei Dinge:
+That buys two things:
 
-- **Löschen in Millisekunden.** `DELETE FROM states WHERE ts < …` muss bei Millionen
-  Zeilen jede einzelne anfassen und ins Transaktionslog schreiben — das kann eine
-  laufende Home-Assistant-Instanz minutenlang blockieren. `ALTER TABLE … DROP PARTITION`
-  löscht stattdessen eine ganze Datei, unabhängig davon, wie viele Zeilen darin stehen.
-- **Kürzere Abfragen.** Bei `WHERE ts BETWEEN '2026-03-01' AND '2026-03-31'` sieht
-  MariaDB, dass nur die März-Partition in Frage kommt, und ignoriert alle anderen
-  („partition pruning"). Das hilft genau bei den Abfragen über alle Entitäten hinweg,
-  die sonst einen vollständigen Tabellenscan auslösen.
+- **Deleting in milliseconds.** `DELETE FROM states WHERE ts < …` has to touch every
+  single row out of millions and write it to the transaction log — that can block a
+  running Home Assistant instance for minutes. `ALTER TABLE … DROP PARTITION` deletes a
+  whole file instead, no matter how many rows are in it.
+- **Shorter queries.** With `WHERE ts BETWEEN '2026-03-01' AND '2026-03-31'` MariaDB
+  sees that only the March partition can qualify and ignores all others ("partition
+  pruning"). That helps exactly with the queries across all entities, which would
+  otherwise trigger a full table scan.
 
-Wichtig ist eine Regel von InnoDB: **Die Partitionsspalte muss Teil jedes eindeutigen
-Schlüssels sein.** Der Primärschlüssel hier ist `(entity_id, ts)` und enthält `ts`
-bereits — deshalb funktioniert die Partitionierung nach `ts` ohne jede Änderung am
-Schema. Wäre der Schlüssel nur `(entity_id)` oder gäbe es eine `id`-Spalte als
-Schlüssel, ginge es nicht.
+One rule of InnoDB matters here: **the partition column has to be part of every unique
+key.** The primary key is `(entity_id, ts)` and already contains `ts` — which is why
+partitioning by `ts` works without any change to the schema. If the key were just
+`(entity_id)`, or if there were an `id` column as the key, it would not work.
 
-### Einrichten
+### Setting it up
 
-`TO_DAYS(ts)` wandelt das Datum in eine Zahl um, nach der sich Bereiche bilden lassen.
-Jede Partition nimmt alles auf, was **kleiner** als ihr Grenzwert ist — `p2026_03` endet
-also am 1. April und enthält damit genau den März:
+`TO_DAYS(ts)` turns the date into a number that ranges can be built from. Every
+partition takes everything **less than** its boundary — so `p2026_03` ends on April 1st
+and therefore contains exactly March:
 
 ```sql
 ALTER TABLE states PARTITION BY RANGE (TO_DAYS(ts)) (
@@ -267,14 +263,16 @@ ALTER TABLE states PARTITION BY RANGE (TO_DAYS(ts)) (
 );
 ```
 
-`pmax` ist die Auffangpartition. Ohne sie würde ein `INSERT` mit einem Zeitstempel
-jenseits der letzten Grenze mit „Table has no partition for value" scheitern — also
-genau dann, wenn der nächste Monat beginnt und niemand daran gedacht hat.
+`pmax` is the catch-all partition. Without it an `INSERT` with a timestamp beyond the
+last boundary would fail with "Table has no partition for value" — precisely when the
+next month begins and nobody thought of it.
 
-### Monatlich nachziehen
+### Adding months
 
-Weil neue Monate nicht von selbst entstehen, muss vor jedem Monatswechsel eine Partition
-dazukommen. Der Weg dafür ist, `pmax` aufzuteilen:
+Because new months do not appear by themselves, a partition has to be added before every
+change of month. The blueprint [Maintain monthly partitions](../archiv_partitions/) does
+that automatically — it creates the lead time and optionally drops old months. By hand it
+works like this, by splitting `pmax`:
 
 ```sql
 ALTER TABLE states REORGANIZE PARTITION pmax INTO (
@@ -283,21 +281,21 @@ ALTER TABLE states REORGANIZE PARTITION pmax INTO (
 );
 ```
 
-Solange `pmax` leer ist, geht das sofort. Läuft es dagegen erst, wenn dort schon Daten
-liegen, muss MariaDB diese Zeilen umsortieren — dann dauert es. Deshalb gehört das in
-eine Automatisierung, die am Monatsanfang den **übernächsten** Monat anlegt.
+As long as `pmax` is empty this is instant. If it runs only once data already sits there,
+MariaDB has to re-sort those rows — then it takes a while. That is why this belongs in an
+automation that creates the month **after next** at the beginning of each month.
 
-### Alte Daten verwerfen
+### Discarding old data
 
 ```sql
 ALTER TABLE states DROP PARTITION p2026_01;
 ```
 
-Ein Aufruf, konstante Laufzeit, kein aufgeblähtes Transaktionslog. Das ist der
-eigentliche Grund, warum sich die Partitionierung lohnt: Ohne sie gibt es keinen
-praktikablen Weg, ein über Jahre gewachsenes Archiv wieder zu verkleinern.
+One call, constant runtime, no bloated transaction log. That is the actual reason why
+partitioning pays off: without it there is no practical way to shrink an archive that
+has grown over years.
 
-### Was drin ist, nachsehen
+### Looking at what is in there
 
 ```sql
 SELECT partition_name, table_rows,
@@ -307,71 +305,71 @@ WHERE table_schema = 'ha_metrics' AND table_name = 'states'
 ORDER BY partition_ordinal_position;
 ```
 
-`table_rows` ist bei InnoDB nur eine Schätzung, für die Größenverteilung reicht es.
+With InnoDB `table_rows` is only an estimate, but it is good enough for the size
+distribution.
 
-## Auswertung in Grafana
+## Querying in Grafana
 
-Datenquelle vom Typ **MySQL**, Host `core-mariadb:3306`, Datenbank `ha_metrics`,
-Benutzer `grafana_ro` (nur Leserechte).
+Data source of type **MySQL**, host `core-mariadb:3306`, database `ha_metrics`, user
+`grafana` (read-only).
 
-Zeitverlauf eines Zählers:
+Time series of one meter:
 
 ```sql
-SELECT ts AS time, value AS "Gaszähler"
+SELECT ts AS time, value AS "Gas meter"
 FROM states
 WHERE entity_id = 'sensor.gaszahler_wohnung_eg_total_gas_consumption_cleaned'
   AND $__timeFilter(ts)
 ORDER BY ts
 ```
 
-Monatsverbrauch (Monatsend-Stand minus Vormonat):
+Monthly consumption (end-of-month reading minus previous month):
 
 ```sql
-SELECT monat AS time, stand - LAG(stand) OVER (ORDER BY monat) AS verbrauch
+SELECT month AS time, reading - LAG(reading) OVER (ORDER BY month) AS consumption
 FROM (
-  SELECT DATE_FORMAT(ts, '%Y-%m-01') AS monat, MAX(value) AS stand
+  SELECT DATE_FORMAT(ts, '%Y-%m-01') AS month, MAX(value) AS reading
   FROM states
   WHERE entity_id = 'sensor.gaszahler_wohnung_eg_total_gas_consumption_cleaned'
-  GROUP BY monat
+  GROUP BY month
 ) m
-ORDER BY monat
+ORDER BY month
 ```
 
-Die Zeitstempel liegen in UTC, die Monatsgrenzen sind gegenüber der deutschen Zeit
-also ein bis zwei Stunden versetzt. Für eine Jahresabrechnung ist das vernachlässigbar.
+The timestamps are in UTC, so the month boundaries are one to two hours off compared to
+German local time. For a yearly bill that is negligible.
 
-## Korrekturen
+## Corrections
 
-Ausreißer und Zählertausch werden direkt per SQL korrigiert, zum Beispiel in
-phpMyAdmin, und dabei als manuell markiert:
+Outliers and meter replacements are corrected directly in SQL, for example in
+phpMyAdmin, and marked as manual while doing so:
 
 ```sql
-UPDATE states SET value = 12345.6, source = 'manuell'
+UPDATE states SET value = 12345.6, source = 'manual'
 WHERE entity_id = 'sensor.gaszahler_wohnung_eg_total_gas_consumption_cleaned'
   AND ts = '2026-03-14 10:02:13.000';
 ```
 
-Der Blueprint überschreibt solche Korrekturen nicht: Eine Zeile wird nur dann erneut
-angefasst, wenn Home Assistant für exakt denselben Zeitstempel noch einmal einen Wert
-liefert.
+The blueprint does not overwrite such corrections: a row is only touched again if Home
+Assistant delivers another value for exactly the same timestamp.
 
-Unabhängig davon bleiben die Langzeitstatistiken von Home Assistant das Sicherheitsnetz
-für die Abrechnung. Sie lassen sich unter **Entwicklerwerkzeuge > Statistik** korrigieren.
+Independently of that, the long-term statistics of Home Assistant remain the safety net
+for billing. They can be corrected under **Developer tools > Statistics**.
 
-## Hinweise
+## Notes
 
-- **Neustart von Home Assistant:** `last_changed` wird beim Start zurückgesetzt. Der
-  erste Intervall-Lauf danach schreibt je Zähler einmal den aktuellen Stand mit neuem
-  Zeitstempel. Das ist harmlos, der Zählerstand selbst bleibt korrekt.
-- **Datenbank nicht erreichbar:** Der Durchlauf bricht ab und der Fehler steht im
-  HA-Protokoll. Zählerstände sind kumulativ, es fehlen also nur Zwischenpunkte — der
-  nächste geschriebene Wert enthält den korrekten Gesamtstand.
-- **Attributänderungen** (z. B. ein neues `friendly_name`) lösen keinen Schreibvorgang
-  aus, weil sie `last_changed` nicht verändern.
-- **Parallele Läufe:** Die Automatisierung läuft im Modus `single` mit
-  `max_exceeded: silent`. Überlappende Auslöser werden verworfen, ohne das Protokoll
-  zu fluten — der nächste Intervall-Lauf holt alles nach.
+- **Restart of Home Assistant:** `last_changed` is reset on start. The first sweep run
+  afterwards writes the current reading once per meter with a new timestamp. That is
+  harmless, the meter reading itself stays correct.
+- **Database not reachable:** the run aborts and the error appears in the HA log. Meter
+  readings are cumulative, so only intermediate points are missing — the next value
+  written contains the correct total.
+- **Attribute changes** (a new `friendly_name`, for instance) trigger no write, because
+  they do not change `last_changed`.
+- **Parallel runs:** the automation runs in mode `single` with `max_exceeded: silent`.
+  Overlapping triggers are dropped without flooding the log — the next sweep run catches
+  up on everything.
 
-## Lizenz
+## License
 
 MIT License
