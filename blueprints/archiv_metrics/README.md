@@ -12,7 +12,7 @@ login, host, port, minimum spacing and sweep interval. None of it is hardcoded i
 blueprint, the values shown are only defaults. The same blueprint can therefore be used
 several times, for example with separate tables or intervals per group of sensors.
 
-**Version: 1.2**
+**Version: 1.3**
 
 ## Features
 
@@ -23,8 +23,8 @@ several times, for example with separate tables or intervals per group of sensor
 - No change, no write — and no empty runs either
 - Non-numeric states (`unknown`, `unavailable`, text) are skipped
 - Database, table, login, host and port come entirely from the automation
-- One single `SELECT` and one single `INSERT` per run, regardless of the number of
-  entities
+- One single `SELECT` per run, then one `INSERT` per value that is actually due — every
+  statement has a fixed shape, nothing about the SQL depends on the number of entities
 
 ## Write logic
 

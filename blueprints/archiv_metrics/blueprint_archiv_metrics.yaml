@@ -3,7 +3,7 @@ blueprint:
   description: >
     # Metrics Archive (MariaDB) — archive sensor records
 
-    **Version: 1.2**
+    **Version: 1.3**
 
 
     Writes sensor values into a dedicated MariaDB database through the pyscript
@@ -202,7 +202,10 @@ actions:
   - condition: template
     value_template: "{{ candidates | count > 0 }}"
 
-  # Fetch the last archived timestamp per entity (one single SELECT)
+  # Fetch the last archived timestamp per entity - one single SELECT, and
+  # deliberately without any parameters: the primary key (entity_id, ts) lets
+  # MariaDB answer MAX(ts) per group from the index alone, and the result has
+  # one row per entity in the table. Filtering happens below in the template.
   - action: pyscript.sql_execute
     data:
       login: !input login
@@ -212,9 +215,7 @@ actions:
       query: >-
         SELECT entity_id, UNIX_TIMESTAMP(MAX(ts)) AS last_ts
         FROM `{{ table_name }}`
-        WHERE entity_id IN ({{ (['%s'] * (candidates | count)) | join(', ') }})
         GROUP BY entity_id
-      params: "{{ candidates }}"
     response_variable: archive
 
   - condition: template
@@ -229,7 +230,9 @@ actions:
         {{ ns.m }}
 
   # Collect the due rows: one entry [entity_id, ts, value, unit] each
-  #   - the state has to be numeric
+  #   - the entity has to exist and carry a numeric state; an entity_id that no
+  #     longer exists yields none here, and touching its last_changed would
+  #     fail the whole template - and with it the entire run
   #   - nothing archived yet -> write
   #   - otherwise only if there is something new (ts > last_ts) and the
   #     minimum spacing has passed since the last archived value
@@ -237,18 +240,19 @@ actions:
       due_rows: >-
         {%- set ns = namespace(rows=[]) -%}
         {%- for e in candidates -%}
-          {%- set wert = states(e) -%}
-          {%- set last_ts = archived.get(e) -%}
-          {%- set ts = as_timestamp(states[e].last_changed) -%}
-          {%- if is_number(wert)
-                 and (last_ts is none
-                      or (ts > last_ts
-                          and as_timestamp(now()) - last_ts >= throttle)) -%}
-            {%- set ns.rows = ns.rows + [[
-                  e,
-                  states[e].last_changed.strftime('%Y-%m-%d %H:%M:%S.%f')[:23],
-                  wert | float,
-                  state_attr(e, 'unit_of_measurement')]] -%}
+          {%- set st = states[e] -%}
+          {%- if st is not none and is_number(st.state) -%}
+            {%- set last_ts = archived.get(e) -%}
+            {%- set ts = as_timestamp(st.last_changed) -%}
+            {%- if last_ts is none
+                   or (ts > last_ts
+                       and as_timestamp(now()) - last_ts >= throttle) -%}
+              {%- set ns.rows = ns.rows + [[
+                    e,
+                    st.last_changed.strftime('%Y-%m-%d %H:%M:%S.%f')[:23],
+                    st.state | float,
+                    state_attr(e, 'unit_of_measurement')]] -%}
+            {%- endif -%}
           {%- endif -%}
         {%- endfor -%}
         {{ ns.rows }}
@@ -256,16 +260,21 @@ actions:
   - condition: template
     value_template: "{{ due_rows | count > 0 }}"
 
-  # One single INSERT with a multi-row VALUES clause for all due values
-  - action: pyscript.sql_execute
-    continue_on_error: true
-    data:
-      login: !input login
-      database: !input database
-      host: !input host
-      port: !input port
-      query: >-
-        INSERT INTO `{{ table_name }}` (entity_id, ts, value, unit)
-        VALUES {{ (['(%s, %s, %s, %s)'] * (due_rows | count)) | join(', ') }}
-        ON DUPLICATE KEY UPDATE value = VALUES(value), unit = VALUES(unit)
-      params: "{{ due_rows | sum(start=[]) }}"
+  # One INSERT per due value. Every statement has a fixed shape with exactly
+  # four placeholders, so nothing about the SQL depends on how many entities
+  # are due in this run.
+  - repeat:
+      for_each: "{{ due_rows }}"
+      sequence:
+        - action: pyscript.sql_execute
+          continue_on_error: true
+          data:
+            login: !input login
+            database: !input database
+            host: !input host
+            port: !input port
+            query: >-
+              INSERT INTO `{{ table_name }}` (entity_id, ts, value, unit)
+              VALUES (%s, %s, %s, %s)
+              ON DUPLICATE KEY UPDATE value = VALUES(value), unit = VALUES(unit)
+            params: "{{ repeat.item }}"
