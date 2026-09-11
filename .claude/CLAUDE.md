@@ -11,7 +11,8 @@ Dieses Repository ist eine Sammlung von Blueprints, Konfigurationen, Skripten un
 │   ├── device_fault_notification/    # Geraetefehlererkennung (Pattern-basiert, z.B. *_fault, *_is_life_end)
 │   ├── entity_staleness_notification/# Erkennung "stiller Ausfaelle" (kein Update seit X Stunden)
 │   ├── low_battery/                  # Batteriewarnung
-│   └── archiv_metrics/               # Sensorwerte gedrosselt ins MariaDB-Langzeitarchiv
+│   ├── archiv_metrics/               # Sensorwerte gedrosselt ins MariaDB-Langzeitarchiv
+│   └── archiv_partitions/            # Monatspartitionen der Archivtabelle pflegen
 ├── custom_templates/                 # Zentrale Jinja2-Macros (security_entities.jinja)
 ├── templates/                        # Template-Sensoren (security_status/ -> sensor.sicherheitsstatus)
 ├── dashboards/                       # Lovelace-Dashboards (je Modul: dashboard.yaml/card.yaml + README.md)
