@@ -12,7 +12,7 @@ login, host, port, minimum spacing and sweep interval. None of it is hardcoded i
 blueprint, the values shown are only defaults. The same blueprint can therefore be used
 several times, for example with separate tables or intervals per group of sensors.
 
-**Version: 1.3**
+**Version: 1.4**
 
 ## Features
 
@@ -374,6 +374,12 @@ for billing. They can be corrected under **Developer tools > Statistics**.
   written contains the correct total.
 - **Attribute changes** (a new `friendly_name`, for instance) trigger no write, because
   they do not change `last_changed`.
+- **Units from enums:** integrations may expose `unit_of_measurement` as an enum member
+  such as `UnitOfEnergy.KILO_WATT_HOUR` rather than a plain string. The blueprint forces
+  it through `~ ''` before it reaches the row list — a `| string` filter is not enough,
+  because the enum subclasses `str` and Jinja passes it through untouched. Without that,
+  the rendered list is not valid Python literal syntax, Home Assistant keeps it as text,
+  and the run fails with `Repeat 'for_each' must be a list of items`.
 - **Parallel runs:** the automation runs in mode `single` with `max_exceeded: silent`.
   Overlapping triggers are dropped without flooding the log — the next sweep run catches
   up on everything.

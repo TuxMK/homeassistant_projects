@@ -3,7 +3,7 @@ blueprint:
   description: >
     # Metrics Archive (MariaDB) — archive sensor records
 
-    **Version: 1.3**
+    **Version: 1.4**
 
 
     Writes sensor values into a dedicated MariaDB database through the pyscript
@@ -233,6 +233,12 @@ actions:
   #   - the entity has to exist and carry a numeric state; an entity_id that no
   #     longer exists yields none here, and touching its last_changed would
   #     fail the whole template - and with it the entire run
+  #   - the unit goes through ~ '' to force a plain string: integrations hand
+  #     out enum members such as UnitOfEnergy.KILO_WATT_HOUR, and their repr
+  #     breaks the list this template renders, so Home Assistant keeps the
+  #     result as text and the run dies with "for_each must be a list of
+  #     items". A | string filter does not help - the enum subclasses str and
+  #     is passed through unchanged.
   #   - nothing archived yet -> write
   #   - otherwise only if there is something new (ts > last_ts) and the
   #     minimum spacing has passed since the last archived value
@@ -244,6 +250,7 @@ actions:
           {%- if st is not none and is_number(st.state) -%}
             {%- set last_ts = archived.get(e) -%}
             {%- set ts = as_timestamp(st.last_changed) -%}
+            {%- set unit = state_attr(e, 'unit_of_measurement') -%}
             {%- if last_ts is none
                    or (ts > last_ts
                        and as_timestamp(now()) - last_ts >= throttle) -%}
@@ -251,7 +258,7 @@ actions:
                     e,
                     st.last_changed.strftime('%Y-%m-%d %H:%M:%S.%f')[:23],
                     st.state | float,
-                    state_attr(e, 'unit_of_measurement')]] -%}
+                    (unit ~ '') if unit is not none else none]] -%}
             {%- endif -%}
           {%- endif -%}
         {%- endfor -%}
