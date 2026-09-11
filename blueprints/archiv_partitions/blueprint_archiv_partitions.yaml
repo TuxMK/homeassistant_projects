@@ -1,126 +1,126 @@
 blueprint:
-  name: SQL-Archiv (MariaDB) — Monatspartitionen pflegen
+  name: Metrics Archive (MariaDB) — maintain monthly partitions
   description: >
-    # Monatspartitionen pflegen
+    # Maintain monthly partitions
 
     **Version: 1.0**
 
 
-    Legt in einer partitionierten Archivtabelle rechtzeitig die Partitionen der
-    kommenden Monate an und verwirft auf Wunsch die ältesten. Gegenstück zum
-    Blueprint **SQL-Archiv (MariaDB)**, das die Werte schreibt.
+    Creates the partitions of the upcoming months in a partitioned archive table in
+    good time, and optionally drops the oldest ones. Counterpart to the blueprint
+    **Metrics Archive (MariaDB)**, which writes the values.
 
 
-    Der Lauf ist **idempotent**: Was schon da ist, wird nicht angefasst. Läuft er
-    einige Tage nicht, holt der nächste Lauf alles nach.
+    A run is **idempotent**: whatever already exists is left alone. If it does not
+    run for a few days, the next run catches up.
 
 
     <details>
-    <summary><b>Was passiert</b></summary>
+    <summary><b>What a run does</b></summary>
 
-      1. Bestehende Partitionen aus `information_schema.partitions` lesen.
-      2. Fehlende Monate (aktueller Monat plus Vorlauf) mit einem
-         `ALTER TABLE … REORGANIZE PARTITION pmax INTO (…)` anlegen.
-      3. Ist eine Aufbewahrung gesetzt, alle Partitionen unterhalb der Grenze
-         mit `ALTER TABLE … DROP PARTITION` verwerfen.
+      1. Read the existing partitions from `information_schema.partitions`.
+      2. Create the missing months (current month plus lead time) with a single
+         `ALTER TABLE … REORGANIZE PARTITION pmax INTO (…)`.
+      3. If a retention is set, drop every partition below the threshold with
+         `ALTER TABLE … DROP PARTITION`.
 
-      Angelegt werden nur Monate **nach** der letzten vorhandenen Partition — eine
-      Lücke in der Vergangenheit lässt sich über `pmax` nicht mehr schließen.
+      Only months **after** the last existing partition are created — a gap in the
+      past can no longer be closed through `pmax`.
     </details>
 
 
     <details>
-    <summary><b>Voraussetzungen</b></summary>
+    <summary><b>Requirements</b></summary>
 
-      - Die Tabelle ist bereits nach `RANGE (TO_DAYS(ts))` partitioniert und hat
-        eine Auffangpartition `pmax` mit `VALUES LESS THAN MAXVALUE`. Das erste
-        `ALTER TABLE … PARTITION BY` schreibt die ganze Tabelle neu und bleibt
-        deshalb bewusst ein Schritt von Hand — er steht in der README.
-      - Der verwendete Login braucht **ALTER** (und für die Aufbewahrung **DROP**)
-        auf der Datenbank. Der Schreib-Login des Archivs hat das bewusst nicht,
-        also am besten ein eigener Login in der pyscript-App-Konfiguration.
+      - The table is already partitioned by `RANGE (TO_DAYS(ts))` and has a catch-all
+        partition `pmax` with `VALUES LESS THAN MAXVALUE`. The initial
+        `ALTER TABLE … PARTITION BY` rewrites the whole table and therefore stays a
+        deliberate manual step — it is in the README.
+      - The login used needs **ALTER** (and **DROP** for the retention) on the
+        database. The archive's write login deliberately has neither, so a separate
+        login in the pyscript app configuration is the way to go.
 
-      Ist die Tabelle nicht partitioniert oder fehlt `pmax`, schreibt die
-      Automatisierung eine Warnung ins Protokoll und ändert nichts.
+      If the table is not partitioned or `pmax` is missing, the automation writes a
+      warning to the log and changes nothing.
     </details>
   domain: automation
   input:
     ziel:
-      name: Ziel
+      name: Target
       icon: mdi:database-cog
       input:
         database:
-          name: Datenbank
-          description: Name der Datenbank in MariaDB.
+          name: Database
+          description: Name of the database in MariaDB.
           default: ha_metrics
           selector:
             text:
         table:
-          name: Tabelle
+          name: Table
           description: >
-            Die partitionierte Archivtabelle. Partitionsspalte ist `ts`.
+            The partitioned archive table. The partition column is `ts`.
           default: states
           selector:
             text:
         login:
           name: Login
           description: >
-            Name des Logins aus der pyscript-App-Konfiguration. Er braucht
-            `ALTER` auf der Datenbank, für die Aufbewahrung zusätzlich `DROP`.
-            Leer lassen, um den dort hinterlegten `default_login` zu verwenden.
+            Name of the login from the pyscript app configuration. It needs `ALTER`
+            on the database, plus `DROP` for the retention. Leave empty to use the
+            `default_login` configured there.
           default: ""
           selector:
             text:
 
     verhalten:
-      name: Verhalten
+      name: Behavior
       icon: mdi:calendar-month
       input:
         lead_months:
-          name: Vorlauf
+          name: Lead time
           description: >
-            Wie viele Monate im Voraus angelegt werden. 2 bedeutet: neben dem
-            laufenden Monat stehen immer die beiden folgenden bereit. Mindestens 1,
-            damit ein Monatswechsel nie in eine fehlende Partition läuft.
+            How many months are created ahead. 2 means: besides the current month,
+            the next two are always ready. At least 1, so that a change of month
+            never runs into a missing partition.
           default: 2
           selector:
             number:
               min: 1
               max: 12
               step: 1
-              unit_of_measurement: Monate
+              unit_of_measurement: months
               mode: box
         keep_months:
-          name: Aufbewahrung
+          name: Retention
           description: >
-            Wie viele Monate erhalten bleiben. Ältere Partitionen werden
-            **gelöscht** — die Daten darin sind unwiederbringlich weg.
-            0 bedeutet: nichts löschen, das Archiv wächst unbegrenzt.
+            How many months are kept. Older partitions are **deleted** — the data in
+            them is gone for good. 0 means: delete nothing, the archive grows
+            without limit.
           default: 0
           selector:
             number:
               min: 0
               max: 240
               step: 1
-              unit_of_measurement: Monate
+              unit_of_measurement: months
               mode: box
         run_at:
-          name: Uhrzeit
+          name: Time of day
           description: >
-            Wann der tägliche Lauf stattfindet. Eine ruhige Zeit wählen, das
-            Umbauen der Partitionen sperrt die Tabelle kurz.
+            When the daily run happens. Pick a quiet time, rebuilding the partitions
+            locks the table briefly.
           default: "04:17:00"
           selector:
             time:
 
     verbindung:
-      name: Verbindung (erweitert)
+      name: Connection (advanced)
       icon: mdi:lan-connect
       collapsed: true
       input:
         host:
           name: Host
-          description: Datenbank-Host. Innerhalb von Home Assistant `core-mariadb`.
+          description: Database host. Inside Home Assistant `core-mariadb`.
           default: core-mariadb
           selector:
             text:
@@ -148,28 +148,29 @@ variables:
   login: !input login
   host: !input host
   port: !input port
-  vorlauf: !input lead_months
-  aufbewahrung: !input keep_months
+  lead: !input lead_months
+  keep: !input keep_months
 
-  # Backticks im Tabellennamen entfernen, damit der Name sicher in das SQL passt
-  tabelle: "{{ table | replace('`', '') }}"
+  # Strip backticks from the table name so it can safely go into the SQL
+  table_name: "{{ table | replace('`', '') }}"
 
-  # Zielmonate: laufender Monat plus Vorlauf, je mit oberer Grenze (= 1. des Folgemonats)
-  monate: >-
+  # Target months: current month plus lead time, each with its upper bound
+  # (= the first day of the following month)
+  target_months: >-
     {%- set ns = namespace(l=[]) -%}
-    {%- set basis = now().year * 12 + now().month - 1 -%}
-    {%- for i in range(0, vorlauf + 1) -%}
-      {%- set a = basis + i -%}
+    {%- set base = now().year * 12 + now().month - 1 -%}
+    {%- for i in range(0, lead + 1) -%}
+      {%- set a = base + i -%}
       {%- set b = a + 1 -%}
       {%- set ns.l = ns.l + [{
-            'name':   'p%04d_%02d' | format(a // 12, a % 12 + 1),
-            'grenze': '%04d-%02d-01' | format(b // 12, b % 12 + 1) }] -%}
+            'name':  'p%04d_%02d' | format(a // 12, a % 12 + 1),
+            'bound': '%04d-%02d-01' | format(b // 12, b % 12 + 1) }] -%}
     {%- endfor -%}
     {{ ns.l }}
 
 actions:
-  # Bestehende Partitionen lesen. Bei einer nicht partitionierten Tabelle liefert
-  # information_schema genau eine Zeile mit partition_name = NULL.
+  # Read the existing partitions. For a table that is not partitioned,
+  # information_schema returns exactly one row with partition_name = NULL.
   - action: pyscript.sql_execute
     data:
       login: !input login
@@ -183,46 +184,46 @@ actions:
         ORDER BY partition_ordinal_position
       params:
         - "{{ database }}"
-        - "{{ tabelle }}"
-    response_variable: bestand
+        - "{{ table_name }}"
+    response_variable: partitions
 
   - condition: template
-    value_template: "{{ bestand.ok | default(false) }}"
+    value_template: "{{ partitions.ok | default(false) }}"
 
   - variables:
-      namen: >-
-        {{ bestand.rows | default([], true) | map(attribute='name')
+      names: >-
+        {{ partitions.rows | default([], true) | map(attribute='name')
            | reject('none') | list }}
 
-  # Ohne Partitionierung oder ohne Auffangpartition wird nichts geaendert
+  # Without partitioning, or without a catch-all partition, nothing is changed
   - if:
       - condition: template
-        value_template: "{{ namen | count == 0 or 'pmax' not in namen }}"
+        value_template: "{{ names | count == 0 or 'pmax' not in names }}"
     then:
       - action: system_log.write
         data:
           level: warning
           logger: archiv_partitions
           message: >-
-            Tabelle `{{ tabelle }}` in `{{ database }}` ist nicht nach ts
-            partitioniert oder hat keine Auffangpartition pmax — es wurde nichts
-            geändert. Die erstmalige Partitionierung steht in der README.
-      - stop: "Tabelle nicht partitioniert"
+            Table `{{ table_name }}` in `{{ database }}` is not partitioned by ts or
+            has no catch-all partition pmax — nothing was changed. The initial
+            partitioning is described in the README.
+      - stop: "Table not partitioned"
 
-  # Fehlende Monate: nur solche nach der letzten vorhandenen Partition, denn
-  # ueber pmax laesst sich nur am oberen Ende etwas anlegen
+  # Missing months: only those after the last existing partition, because through
+  # pmax something can be added at the upper end only
   - variables:
-      da: "{{ namen | reject('eq', 'pmax') | list }}"
+      existing: "{{ names | reject('eq', 'pmax') | list }}"
   - variables:
-      letzte: "{{ (da | sort | last) if da | count > 0 else '' }}"
+      last: "{{ (existing | sort | last) if existing | count > 0 else '' }}"
   - variables:
-      fehlend: >-
-        {{ monate | rejectattr('name', 'in', da)
-                  | selectattr('name', 'gt', letzte) | list }}
+      missing: >-
+        {{ target_months | rejectattr('name', 'in', existing)
+                         | selectattr('name', 'gt', last) | list }}
 
   - if:
       - condition: template
-        value_template: "{{ fehlend | count > 0 }}"
+        value_template: "{{ missing | count > 0 }}"
     then:
       - action: pyscript.sql_execute
         data:
@@ -231,31 +232,31 @@ actions:
           host: !input host
           port: !input port
           query: >-
-            ALTER TABLE `{{ tabelle }}` REORGANIZE PARTITION pmax INTO (
+            ALTER TABLE `{{ table_name }}` REORGANIZE PARTITION pmax INTO (
             {%- set ns = namespace(t=[]) -%}
-            {%- for m in fehlend -%}
+            {%- for m in missing -%}
               {%- set ns.t = ns.t + ["PARTITION " ~ m.name ~
-                    " VALUES LESS THAN (TO_DAYS('" ~ m.grenze ~ "'))"] -%}
+                    " VALUES LESS THAN (TO_DAYS('" ~ m.bound ~ "'))"] -%}
             {%- endfor -%}
             {{ (ns.t + ['PARTITION pmax VALUES LESS THAN MAXVALUE']) | join(', ') }})
-        response_variable: angelegt
+        response_variable: created
 
       - condition: template
-        value_template: "{{ angelegt.ok | default(false) }}"
+        value_template: "{{ created.ok | default(false) }}"
 
-  # Aufbewahrung: alles unterhalb der Grenze verwerfen
+  # Retention: drop everything below the threshold
   - condition: template
-    value_template: "{{ aufbewahrung | int(0) > 0 }}"
+    value_template: "{{ keep | int(0) > 0 }}"
 
   - variables:
-      schwelle: >-
-        {%- set a = now().year * 12 + now().month - 1 - (aufbewahrung | int) -%}
+      threshold: >-
+        {%- set a = now().year * 12 + now().month - 1 - (keep | int) -%}
         {{ 'p%04d_%02d' | format(a // 12, a % 12 + 1) }}
   - variables:
-      alt: "{{ da | select('lt', schwelle) | sort | list }}"
+      obsolete: "{{ existing | select('lt', threshold) | sort | list }}"
 
   - condition: template
-    value_template: "{{ alt | count > 0 }}"
+    value_template: "{{ obsolete | count > 0 }}"
 
   - action: pyscript.sql_execute
     data:
@@ -263,4 +264,4 @@ actions:
       database: !input database
       host: !input host
       port: !input port
-      query: "ALTER TABLE `{{ tabelle }}` DROP PARTITION {{ alt | join(', ') }}"
+      query: "ALTER TABLE `{{ table_name }}` DROP PARTITION {{ obsolete | join(', ') }}"
