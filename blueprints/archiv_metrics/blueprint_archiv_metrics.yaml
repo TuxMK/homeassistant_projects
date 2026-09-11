@@ -1,0 +1,275 @@
+blueprint:
+  name: Metrics / Records archivieren — Zählerstände archivieren
+  description: >
+    # Metrics / Records archivieren — Zählerstände archivieren
+
+    **Version: 1.1**
+
+
+    Schreibt Sensorwerte über den pyscript-Connector `pyscript.sql_execute` in eine
+    eigene MariaDB-Datenbank (Langzeitarchiv als Ersatz für die InfluxDB-Integration).
+
+
+    Entitäten, Datenbank, Tabelle, Login, Host und Port werden vollständig hier in der
+    Automatisierung gesetzt — im Blueprint und im Connector ist nichts davon fest
+    verdrahtet. Dieselbe Vorlage lässt sich dadurch mehrfach verwenden, etwa mit
+    unterschiedlichen Tabellen oder Intervallen je Sensorgruppe.
+
+
+    <details>
+    <summary><b>Schreiblogik</b></summary>
+
+      - **Erste Änderung nach einer Ruhephase:** wird sofort geschrieben.
+      - **Weitere Änderungen innerhalb des Intervalls:** werden gesammelt, nach Ablauf
+        des Intervalls wird nur der **neueste** Wert geschrieben.
+      - **Keine Änderung:** es wird nichts geschrieben.
+
+      Alle fälligen Werte eines Durchlaufs gehen als **ein einziger** INSERT mit
+      mehrzeiligem `VALUES` zur Datenbank — eine Verbindung je Durchlauf statt
+      einer je Wert.
+
+      Als Zeitstempel wird immer der echte `last_changed` der Entität gespeichert (UTC),
+      nicht der Zeitpunkt des Schreibens.
+    </details>
+
+
+    <details>
+    <summary><b>Voraussetzungen</b></summary>
+
+      - MariaDB-Add-on mit eigener Datenbank (z. B. `ha_metrics`) und Zieltabelle.
+      - pyscript (HACS) mit der App `ha_mysql.py` und einem Login in der
+        `configuration.yaml` (Benutzername/Passwort via `secrets.yaml`).
+      - Die Tabelle braucht den Primärschlüssel `(entity_id, ts)`.
+
+      Details und das `CREATE TABLE` stehen in der README des Blueprints.
+    </details>
+  domain: automation
+  input:
+    quelle:
+      name: Quelle
+      icon: mdi:counter
+      input:
+        entities:
+          name: Entitäten
+          description: >
+            Die zu archivierenden Sensoren. Nicht-numerische Zustände
+            (`unknown`, `unavailable`, Text) werden übersprungen.
+          selector:
+            entity:
+              multiple: true
+              filter:
+                - domain: sensor
+
+    ziel:
+      name: Ziel
+      icon: mdi:database
+      input:
+        database:
+          name: Datenbank
+          description: >
+            Name der Datenbank in MariaDB, in die geschrieben wird.
+          default: ha_metrics
+          selector:
+            text:
+        table:
+          name: Tabelle
+          description: >
+            Zieltabelle mit den Spalten `entity_id`, `ts`, `value`, `unit`
+            und dem Primärschlüssel `(entity_id, ts)`.
+          default: states
+          selector:
+            text:
+        login:
+          name: Login
+          description: >
+            Name des Logins aus der pyscript-App-Konfiguration (z. B. `archiv`).
+            Damit wählst du, mit welchem Datenbankbenutzer geschrieben wird.
+            Leer lassen, um den dort hinterlegten `default_login` zu verwenden.
+          default: ""
+          selector:
+            text:
+
+    verhalten:
+      name: Schreibverhalten
+      icon: mdi:timer-cog-outline
+      collapsed: true
+      input:
+        throttle_seconds:
+          name: Mindestabstand
+          description: >
+            Mindestabstand zwischen zwei archivierten Werten derselben Entität
+            (in Sekunden). 10 = höchstens ein Wert alle 10 Sekunden und Entität,
+            60 = höchstens einer pro Minute. Bestimmt direkt, wie schnell die
+            Tabelle wächst.
+          default: 10
+          selector:
+            number:
+              min: 10
+              max: 3600
+              step: 10
+              unit_of_measurement: Sekunden
+              mode: box
+        write_immediately:
+          name: Erste Änderung sofort schreiben
+          description: >
+            Schreibt die erste Änderung nach einer Ruhephase ohne Verzögerung.
+            Ausgeschaltet werden alle Werte erst beim nächsten Intervall-Lauf
+            geschrieben.
+          default: true
+          selector:
+            boolean:
+        sweep_seconds:
+          name: Intervall-Lauf
+          description: >
+            Wie oft die gesammelten Änderungen nachgetragen werden (in Sekunden).
+            Bestimmt die Genauigkeit des Mindestabstands — ein Wert kleiner oder
+            gleich dem Mindestabstand ist sinnvoll. Der Takt muss 60 Sekunden
+            gleichmäßig teilen, deshalb eine feste Auswahl statt einer freien Zahl.
+          default: "/10"
+          selector:
+            select:
+              options:
+                - label: Alle 5 Sekunden
+                  value: "/5"
+                - label: Alle 10 Sekunden
+                  value: "/10"
+                - label: Alle 15 Sekunden
+                  value: "/15"
+                - label: Alle 20 Sekunden
+                  value: "/20"
+                - label: Alle 30 Sekunden
+                  value: "/30"
+                - label: Alle 60 Sekunden
+                  value: "0"
+
+    verbindung:
+      name: Verbindung (erweitert)
+      icon: mdi:lan-connect
+      collapsed: true
+      input:
+        host:
+          name: Host
+          description: Datenbank-Host. Innerhalb von Home Assistant `core-mariadb`.
+          default: core-mariadb
+          selector:
+            text:
+        port:
+          name: Port
+          default: 3306
+          selector:
+            number:
+              min: 1
+              max: 65535
+              mode: box
+
+mode: single
+max_exceeded: silent
+
+triggers:
+  - trigger: state
+    entity_id: !input entities
+    id: aenderung
+  - trigger: time_pattern
+    seconds: !input sweep_seconds
+    id: intervall
+
+variables:
+  entities: !input entities
+  database: !input database
+  table: !input table
+  login: !input login
+  host: !input host
+  port: !input port
+  throttle: !input throttle_seconds
+  sofort: !input write_immediately
+
+  # Backticks im Tabellennamen entfernen, damit der Name sicher in das SQL passt
+  tabelle: "{{ table | replace('`', '') }}"
+
+  # Welche Entitäten in diesem Lauf geprüft werden:
+  #   Intervall-Lauf  -> alle verfügbaren Entitäten
+  #   Zustandswechsel -> nur die ausgeloeste Entität, und nur wenn der vorherige
+  #                      Wert mindestens den Mindestabstand lang stabil war
+  #                      (dann ist er sicher bereits archiviert)
+  kandidaten: >-
+    {%- if trigger.id == 'intervall' -%}
+      {{ entities | select('has_value') | list }}
+    {%- elif sofort and trigger.from_state is not none
+             and (trigger.to_state.last_changed
+                  - trigger.from_state.last_changed).total_seconds() >= throttle -%}
+      {{ [trigger.entity_id] }}
+    {%- else -%}
+      {{ [] }}
+    {%- endif -%}
+
+actions:
+  - condition: template
+    value_template: "{{ kandidaten | count > 0 }}"
+
+  # Letzten archivierten Zeitstempel je Entität holen (ein einziger SELECT)
+  - action: pyscript.sql_execute
+    data:
+      login: !input login
+      database: !input database
+      host: !input host
+      port: !input port
+      query: >-
+        SELECT entity_id, UNIX_TIMESTAMP(MAX(ts)) AS last_ts
+        FROM `{{ tabelle }}`
+        WHERE entity_id IN ({{ (['%s'] * (kandidaten | count)) | join(', ') }})
+        GROUP BY entity_id
+      params: "{{ kandidaten }}"
+    response_variable: archiv
+
+  - condition: template
+    value_template: "{{ archiv.ok | default(false) }}"
+
+  - variables:
+      letzte: >-
+        {%- set ns = namespace(m={}) -%}
+        {%- for r in archiv.rows | default([], true) -%}
+          {%- set ns.m = dict(ns.m, **{r.entity_id: r.last_ts}) -%}
+        {%- endfor -%}
+        {{ ns.m }}
+
+  # Faellige Zeilen sammeln: je Eintrag [entity_id, ts, value, unit]
+  #   - Zustand muss numerisch sein
+  #   - noch nichts archiviert  -> schreiben
+  #   - sonst nur, wenn es etwas Neues gibt (ts > last_ts) und der
+  #     Mindestabstand seit dem letzten archivierten Wert vergangen ist
+  - variables:
+      zeilen: >-
+        {%- set ns = namespace(rows=[]) -%}
+        {%- for e in kandidaten -%}
+          {%- set wert = states(e) -%}
+          {%- set last_ts = letzte.get(e) -%}
+          {%- set ts = as_timestamp(states[e].last_changed) -%}
+          {%- if is_number(wert)
+                 and (last_ts is none
+                      or (ts > last_ts
+                          and as_timestamp(now()) - last_ts >= throttle)) -%}
+            {%- set ns.rows = ns.rows + [[
+                  e,
+                  states[e].last_changed.strftime('%Y-%m-%d %H:%M:%S.%f')[:23],
+                  wert | float,
+                  state_attr(e, 'unit_of_measurement')]] -%}
+          {%- endif -%}
+        {%- endfor -%}
+        {{ ns.rows }}
+
+  - condition: template
+    value_template: "{{ zeilen | count > 0 }}"
+
+  # Ein einziger INSERT mit mehrzeiligem VALUES fuer alle faelligen Werte
+  - action: pyscript.sql_execute
+    continue_on_error: true
+    data:
+      login: !input login
+      database: !input database
+      host: !input host
+      port: !input port
+      query: >-
+        INSERT INTO `{{ tabelle }}` (entity_id, ts, value, unit)
+        VALUES {{ (['(%s, %s, %s, %s)'] * (zeilen | count)) | join(', ') }}
+        ON DUPLICATE KEY UPDATE value = VALUES(value), unit = VALUES(unit)
+      params: "{{ zeilen | sum(start=[]) }}"

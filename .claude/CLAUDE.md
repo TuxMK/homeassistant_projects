@@ -10,7 +10,8 @@ Dieses Repository ist eine Sammlung von Blueprints, Konfigurationen, Skripten un
 │   ├── climate_alarm/                # Klima-/Temperatur-Alarm
 │   ├── device_fault_notification/    # Geraetefehlererkennung (Pattern-basiert, z.B. *_fault, *_is_life_end)
 │   ├── entity_staleness_notification/# Erkennung "stiller Ausfaelle" (kein Update seit X Stunden)
-│   └── low_battery/                  # Batteriewarnung
+│   ├── low_battery/                  # Batteriewarnung
+│   └── archiv_metrics/               # Sensorwerte gedrosselt ins MariaDB-Langzeitarchiv
 ├── custom_templates/                 # Zentrale Jinja2-Macros (security_entities.jinja)
 ├── templates/                        # Template-Sensoren (security_status/ -> sensor.sicherheitsstatus)
 ├── dashboards/                       # Lovelace-Dashboards (je Modul: dashboard.yaml/card.yaml + README.md)
@@ -25,6 +26,7 @@ Dieses Repository ist eine Sammlung von Blueprints, Konfigurationen, Skripten un
 │   ├── statistics_widget/            # Navigation zur Statistik-/Energie-Ansicht
 │   └── billing_widget/               # Navigation zum Abrechnungs-Dashboard
 ├── automations/                      # Standalone-Automationen (mqtt_pulse_counter_cleanup)
+├── pyscript/apps/                    # Pyscript-Apps (ha_mysql.py -> Aktion pyscript.sql_execute)
 ├── zigbee2mqtt/                      # Zigbee2MQTT-Konfiguration und Overrides
 ├── LICENSE                           # MIT License
 └── README.md                         # Projekt-Uebersicht

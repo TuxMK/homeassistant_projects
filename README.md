@@ -10,6 +10,13 @@ Eine Sammlung von Blueprints, Konfigurationen, Skripten und anderen Ressourcen a
 |------|--------------|
 | [Device Fault Notifications](blueprints/device_fault_notifications/) | Benachrichtigungen bei Geraetefehlern (basierend auf Binary Sensor Patterns) |
 | [Climate Alarm](blueprints/climate_alarm/) | Echtzeit-Temperatur- & Feuchtigkeitsueberwachung mit Normbereichen, Hysterese und Prioritaetslogik |
+| [Archiv Metrics](blueprints/archiv_metrics/) | Archiviert Sensorwerte gedrosselt in einer eigenen MariaDB (Ersatz fuer die InfluxDB-Integration) |
+
+### Pyscript
+
+| Name | Beschreibung |
+|------|--------------|
+| [SQL Connector](pyscript/apps/ha_mysql.py) | Stellt `pyscript.sql_execute` bereit — fuehrt SQL auf MariaDB/MySQL aus, Zugangsdaten nur aus `secrets.yaml` |
 
 ### Custom Templates
 
