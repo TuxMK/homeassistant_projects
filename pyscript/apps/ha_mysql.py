@@ -1,16 +1,16 @@
 """
-SQL-Connector (pyscript-App) für Home Assistant
+SQL connector (pyscript app) for Home Assistant
 ================================================
 
-Stellt die Aktion `pyscript.sql_execute` bereit.
+Provides the action `pyscript.sql_execute`.
 
-Alles Fachliche kommt aus der HA-Automatisierung: Host, Port, Datenbank,
-SQL-Befehl und Parameter. Nur Benutzername und Passwort liegen in der
-App-Konfiguration (configuration.yaml / secrets.yaml) und werden über
-einen Login-Namen ausgewählt.
+Everything domain specific comes from the HA automation: host, port, database,
+SQL statement and parameters. Only username and password live in the app
+configuration (configuration.yaml / secrets.yaml) and are picked by a login
+name.
 
-Ablage:        /config/pyscript/apps/ha_mysql.py
-Abhängigkeit:  /config/pyscript/requirements.txt  ->  PyMySQL
+Location:    /config/pyscript/apps/ha_mysql.py
+Dependency:  /config/pyscript/requirements.txt  ->  PyMySQL
 """
 
 import re
@@ -26,12 +26,12 @@ _TZ_PATTERN = re.compile(r"^(SYSTEM|[+-]\d{2}:\d{2})$")
 
 @pyscript_executor
 def _run_sql(conn_args, query, params):
-    """Läuft in einem eigenen Thread und blockiert Home Assistant nicht."""
+    """Runs in its own thread and does not block Home Assistant."""
     import datetime
     import decimal
 
     def jsonable(value):
-        # Ergebnisse müssen für die HA-Antwortvariable serialisierbar sein
+        # Results have to be serializable for the HA response variable
         if isinstance(value, (datetime.datetime, datetime.date, datetime.time)):
             return value.isoformat()
         if isinstance(value, datetime.timedelta):
@@ -72,39 +72,39 @@ def sql_execute(query=None, params=None, database=None, host="core-mariadb",
                 port=3306, login=None, charset="utf8mb4", time_zone="+00:00",
                 connect_timeout=5):
     """yaml
-name: SQL ausführen
+name: Run SQL
 description: >-
-  Führt einen SQL-Befehl auf einer MariaDB/MySQL-Datenbank aus.
-  Benutzername und Passwort kommen aus der App-Konfiguration (login),
-  alles andere aus dem Aufruf. Antwort: ok, error, affected_rows,
+  Runs a SQL statement on a MariaDB/MySQL database.
+  Username and password come from the app configuration (login),
+  everything else from the call. Response: ok, error, affected_rows,
   lastrowid, rows.
 fields:
   query:
     description: >-
-      SQL-Befehl. Werte immer als Platzhalter übergeben (%s oder %(name)s),
-      nie direkt in den Text einsetzen.
+      SQL statement. Always pass values as placeholders (%s or %(name)s),
+      never inline them into the text.
     required: true
     example: "INSERT INTO states (entity_id, ts, value) VALUES (%s, %s, %s)"
     selector:
       text:
         multiline: true
   params:
-    description: Werte für die Platzhalter – Liste für %s, Dictionary für %(name)s.
+    description: Values for the placeholders - list for %s, dictionary for %(name)s.
     example: '["sensor.gaszaehler", "2026-09-11 10:00:00.000", 1234.5]'
     selector:
       object:
   database:
-    description: Datenbank (in MariaDB gleichbedeutend mit Schema).
-    example: ha_archiv
+    description: Database (in MariaDB the same as schema).
+    example: ha_metrics
     selector:
       text:
   host:
-    description: Datenbank-Host.
+    description: Database host.
     default: core-mariadb
     selector:
       text:
   port:
-    description: Port der Datenbank.
+    description: Database port.
     default: 3306
     selector:
       number:
@@ -112,22 +112,22 @@ fields:
         max: 65535
         mode: box
   login:
-    description: Name des Logins aus der App-Konfiguration.
+    description: Name of the login from the app configuration.
     example: archiv
     selector:
       text:
   charset:
-    description: Zeichensatz der Verbindung.
+    description: Character set of the connection.
     default: utf8mb4
     selector:
       text:
   time_zone:
-    description: Zeitzone der Sitzung, z. B. +00:00 (UTC) oder SYSTEM.
+    description: Session time zone, e. g. +00:00 (UTC) or SYSTEM.
     default: "+00:00"
     selector:
       text:
   connect_timeout:
-    description: Timeout für den Verbindungsaufbau in Sekunden.
+    description: Timeout for establishing the connection, in seconds.
     default: 5
     selector:
       number:
@@ -139,11 +139,11 @@ fields:
     creds = _LOGINS.get(login) or {}
 
     if not query:
-        return _fail("Kein SQL-Befehl (query) übergeben.")
+        return _fail("No SQL statement (query) was passed.")
     if "username" not in creds or "password" not in creds:
-        return _fail(f"Login '{login}' ist in der App-Konfiguration nicht vollständig definiert.")
+        return _fail(f"Login '{login}' is not fully defined in the app configuration.")
     if not _TZ_PATTERN.match(str(time_zone)):
-        return _fail(f"Ungültige Zeitzone '{time_zone}' (erlaubt: SYSTEM oder ±HH:MM).")
+        return _fail(f"Invalid time zone '{time_zone}' (allowed: SYSTEM or +/-HH:MM).")
 
     conn_args = {
         "host": host,
@@ -159,7 +159,7 @@ fields:
     try:
         result = _run_sql(conn_args, query, params)
     except Exception as err:
-        # Passwort taucht hier nie auf, nur Login-Name, Host und Datenbank
+        # The password never shows up here, only login name, host and database
         return _fail(f"{login}@{host}/{database or '-'}: {err}")
 
     result["ok"] = True
