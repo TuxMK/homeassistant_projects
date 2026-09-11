@@ -181,6 +181,11 @@ distribution.
 
 ## Notes
 
+- **Partition names are compared as text.** The automation takes the highest existing
+  name as the upper end and only creates months above it. A name outside the `pYYYY_MM`
+  scheme — `p_before` or `pmin`, say — sorts above every month and would stop it from
+  ever creating another one. A catch-all for old data is not needed anyway: the first
+  partition takes everything below its bound.
 - If the table is not partitioned or `pmax` is missing, the automation writes a warning
   to the log (logger `archiv_partitions`) and changes nothing. That is the hint that
   the one-time partitioning above is still missing.

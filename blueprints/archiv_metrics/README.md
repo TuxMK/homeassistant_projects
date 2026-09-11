@@ -316,6 +316,27 @@ ORDER BY partition_ordinal_position;
 With InnoDB `table_rows` is only an estimate, but it is good enough for the size
 distribution.
 
+## Migration from InfluxDB
+
+The history that is already in the InfluxDB integration does not have to be left behind.
+The two scripts in [`tools/`](tools/) move it across: one exports the points month by
+month as line protocol, the other pipes them into this table. Nothing beyond `docker`,
+`awk` and the `mysql` client is needed.
+
+```bash
+# on the HA host: dump the history, one file per month
+zsh tools/influx_export_monthly.sh
+
+# wherever the dumps landed: straight into the archive table
+tools/influx_import_mysql.sh <db-user> <db-password>
+```
+
+The imported rows carry `source = 'import'` and go in with `INSERT IGNORE`, so nothing
+that this blueprint or a manual correction has already written gets overwritten. The
+cut-off that keeps the import from overlapping the live data, the mapping of the two
+schemas and the pitfall with an already partitioned table are in the
+[README of the tools](tools/).
+
 ## Querying in Grafana
 
 Data source of type **MySQL**, host `core-mariadb:3306`, database `ha_metrics`, user

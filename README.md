@@ -11,6 +11,7 @@ Eine Sammlung von Blueprints, Konfigurationen, Skripten und anderen Ressourcen a
 | [Device Fault Notifications](blueprints/device_fault_notifications/) | Benachrichtigungen bei Geraetefehlern (basierend auf Binary Sensor Patterns) |
 | [Climate Alarm](blueprints/climate_alarm/) | Echtzeit-Temperatur- & Feuchtigkeitsueberwachung mit Normbereichen, Hysterese und Prioritaetslogik |
 | [Archiv Metrics](blueprints/archiv_metrics/) | Archiviert Sensorwerte gedrosselt in einer eigenen MariaDB (Ersatz fuer die InfluxDB-Integration) |
+| [Influx-Migration](blueprints/archiv_metrics/tools/) | Exportiert die Historie der InfluxDB-Integration monatsweise und importiert sie ins MariaDB-Archiv |
 | [Archiv Partitions](blueprints/archiv_partitions/) | Pflegt die Monatspartitionen der Archivtabelle: legt neue an, verwirft alte |
 
 ### Pyscript
