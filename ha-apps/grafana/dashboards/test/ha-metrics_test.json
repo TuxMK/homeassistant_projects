@@ -1,0 +1,327 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_HA_METRICS",
+      "label": "HA Metrics",
+      "description": "MySQL-Datasource auf die Datenbank ha_metrics",
+      "type": "datasource",
+      "pluginId": "mysql",
+      "pluginName": "MySQL"
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Verbindungs- und Datentest gegen die Archivtabelle states in ha_metrics. Prueft Erreichbarkeit, Session-Zeitzone, Datenbestand je Entity und Quelle sowie die Zeitachse.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [],
+  "panels": [
+    {
+      "id": 1,
+      "type": "table",
+      "title": "Verbindung & Zeitzone",
+      "description": "Kommt hier eine Zeile zurueck, steht die Verbindung. db_utc und db_session_now muessen identisch sein - dann ist die Session-Zeitzone der Datasource auf +00:00 gesetzt und passt zu den in UTC gespeicherten Zeitstempeln.",
+      "datasource": { "type": "mysql", "uid": "${DS_HA_METRICS}" },
+      "gridPos": { "h": 5, "w": 14, "x": 0, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": { "show": false, "countRows": false, "fields": "", "reducer": ["sum"] }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "mysql", "uid": "${DS_HA_METRICS}" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT VERSION()                                         AS db_version,\n       DATABASE()                                        AS db_name,\n       CURRENT_USER()                                    AS db_user,\n       @@session.time_zone                               AS session_tz,\n       DATE_FORMAT(UTC_TIMESTAMP(), '%Y-%m-%d %H:%i:%s') AS db_utc,\n       DATE_FORMAT(NOW(),           '%Y-%m-%d %H:%i:%s') AS db_session_now",
+          "sql": { "columns": [{ "parameters": [], "type": "function" }], "groupBy": [{ "property": { "type": "string" }, "type": "groupBy" }], "limit": 50 }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Zeilen im Zeitraum",
+      "description": "Zaehlt die Zeilen im gewaehlten Zeitbereich. Bleibt der Wert 0, obwohl die Inventar-Tabelle Daten zeigt, greift der Zeitfilter daneben - dann stimmt die Session-Zeitzone nicht.",
+      "datasource": { "type": "mysql", "uid": "${DS_HA_METRICS}" },
+      "gridPos": { "h": 5, "w": 5, "x": 14, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "mysql", "uid": "${DS_HA_METRICS}" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(*) AS `Zeilen`\nFROM states\nWHERE $__timeFilter(ts)",
+          "sql": { "columns": [{ "parameters": [], "type": "function" }], "groupBy": [{ "property": { "type": "string" }, "type": "groupBy" }], "limit": 50 }
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Entities im Archiv",
+      "description": "Anzahl verschiedener entity_id in der gesamten Tabelle, unabhaengig vom Zeitbereich.",
+      "datasource": { "type": "mysql", "uid": "${DS_HA_METRICS}" },
+      "gridPos": { "h": 5, "w": 5, "x": 19, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "mysql", "uid": "${DS_HA_METRICS}" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(DISTINCT entity_id) AS `Entities`\nFROM states",
+          "sql": { "columns": [{ "parameters": [], "type": "function" }], "groupBy": [{ "property": { "type": "string" }, "type": "groupBy" }], "limit": 50 }
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "table",
+      "title": "Inventar: Entities und Quellen",
+      "description": "Je Entity und Quelle die Zeilenzahl und der abgedeckte Zeitraum - ohne Zeitfilter, zeigt also das ganze Archiv. Damit laesst sich die Influx-Migration pruefen: source=import endet dort, wo source=ha beginnt.",
+      "datasource": { "type": "mysql", "uid": "${DS_HA_METRICS}" },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 5 },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "filterable": true, "inspect": false },
+          "mappings": []
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Zeilen" },
+            "properties": [
+              { "id": "unit", "value": "short" },
+              { "id": "custom.align", "value": "right" },
+              { "id": "custom.width", "value": 110 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Quelle" },
+            "properties": [{ "id": "custom.width", "value": 100 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Einheit" },
+            "properties": [{ "id": "custom.width", "value": 100 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Erste (UTC)" },
+            "properties": [{ "id": "custom.width", "value": 190 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Letzte (UTC)" },
+            "properties": [{ "id": "custom.width", "value": 190 }]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": { "show": true, "countRows": false, "fields": ["Zeilen"], "reducer": ["sum"] },
+        "sortBy": [{ "desc": false, "displayName": "Entity" }]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "mysql", "uid": "${DS_HA_METRICS}" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT entity_id                                      AS `Entity`,\n       source                                         AS `Quelle`,\n       COUNT(*)                                       AS `Zeilen`,\n       DATE_FORMAT(MIN(ts), '%Y-%m-%d %H:%i:%s')      AS `Erste (UTC)`,\n       DATE_FORMAT(MAX(ts), '%Y-%m-%d %H:%i:%s')      AS `Letzte (UTC)`,\n       MAX(unit)                                      AS `Einheit`\nFROM states\nGROUP BY entity_id, source\nORDER BY entity_id, source",
+          "sql": { "columns": [{ "parameters": [], "type": "function" }], "groupBy": [{ "property": { "type": "string" }, "type": "groupBy" }], "limit": 50 }
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Zeitreihe: $entity",
+      "description": "Die eigentliche Probe: value ueber der Zeit fuer die oben gewaehlten Entities, begrenzt durch den Zeitbereich des Dashboards.",
+      "datasource": { "type": "mysql", "uid": "${DS_HA_METRICS}" },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 15 },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 8,
+            "gradientMode": "none",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 4,
+            "scaleDistribution": { "type": "linear" },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": { "group": "A", "mode": "none" },
+            "thresholdsStyle": { "mode": "off" }
+          },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": ["min", "max", "lastNotNull"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": { "mode": "multi", "sort": "none" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "mysql", "uid": "${DS_HA_METRICS}" },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT ts        AS time,\n       entity_id AS metric,\n       value\nFROM states\nWHERE entity_id IN (${entity:sqlstring})\n  AND $__timeFilter(ts)\nORDER BY ts",
+          "sql": { "columns": [{ "parameters": [], "type": "function" }], "groupBy": [{ "property": { "type": "string" }, "type": "groupBy" }], "limit": 50 }
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "table",
+      "title": "Letzte 20 Rohzeilen",
+      "description": "Die Spalte ts (UTC, roh) kommt als Text aus der Datenbank, ts (Grafana) als Zeitstempel und wird von Grafana in die Anzeigezone umgerechnet. Der Abstand zwischen beiden muss genau deinem UTC-Offset entsprechen - im Sommer zwei Stunden, im Winter eine.",
+      "datasource": { "type": "mysql", "uid": "${DS_HA_METRICS}" },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 25 },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "filterable": false, "inspect": false },
+          "mappings": []
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "ts (UTC, roh)" },
+            "properties": [{ "id": "custom.width", "value": 210 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "ts (Grafana)" },
+            "properties": [{ "id": "custom.width", "value": 210 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Wert" },
+            "properties": [{ "id": "custom.align", "value": "right" }]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": { "show": false, "countRows": false, "fields": "", "reducer": ["sum"] }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "mysql", "uid": "${DS_HA_METRICS}" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT DATE_FORMAT(ts, '%Y-%m-%d %H:%i:%s.%f') AS `ts (UTC, roh)`,\n       ts                                     AS `ts (Grafana)`,\n       entity_id                              AS `Entity`,\n       value                                  AS `Wert`,\n       state                                  AS `State`,\n       unit                                   AS `Einheit`,\n       source                                 AS `Quelle`\nFROM states\nWHERE entity_id IN (${entity:sqlstring})\nORDER BY ts DESC\nLIMIT 20",
+          "sql": { "columns": [{ "parameters": [], "type": "function" }], "groupBy": [{ "property": { "type": "string" }, "type": "groupBy" }], "limit": 50 }
+        }
+      ]
+    }
+  ],
+  "preload": false,
+  "refresh": "",
+  "schemaVersion": 39,
+  "tags": ["ha_metrics", "test"],
+  "templating": {
+    "list": [
+      {
+        "name": "entity",
+        "label": "Entity",
+        "description": "Entities aus der Archivtabelle, mehrfach waehlbar.",
+        "type": "query",
+        "datasource": { "type": "mysql", "uid": "${DS_HA_METRICS}" },
+        "definition": "SELECT DISTINCT entity_id FROM states ORDER BY entity_id",
+        "query": "SELECT DISTINCT entity_id FROM states ORDER BY entity_id",
+        "current": {},
+        "options": [],
+        "hide": 0,
+        "includeAll": false,
+        "multi": true,
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1
+      }
+    ]
+  },
+  "time": { "from": "now-24h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "HA Metrics - Archiv-Test",
+  "uid": "ha-metrics-archiv-test",
+  "version": 1,
+  "weekStart": ""
+}

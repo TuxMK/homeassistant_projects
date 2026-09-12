@@ -10,7 +10,7 @@ Das Repository ist nach Ziel-System gegliedert:
 |---------|--------|
 | [ha-core/](ha-core/) | Alles, was direkt in die Home-Assistant-Konfiguration gehoert: Blueprints, Automationen, Templates, Custom Templates und Dashboards |
 | [ha-plugins/](ha-plugins/) | Erweiterungen/Integrationen innerhalb von Home Assistant (Pyscript-Apps) |
-| [ha-apps/](ha-apps/) | Eigenstaendige Anwendungen neben Home Assistant (Zigbee2MQTT) |
+| [ha-apps/](ha-apps/) | Eigenstaendige Anwendungen neben Home Assistant (Zigbee2MQTT, Grafana) |
 
 ## Inhalt
 
@@ -70,6 +70,13 @@ Das Repository ist nach Ziel-System gegliedert:
 | Name | Beschreibung |
 |------|--------------|
 | [External Converters](ha-apps/zigbee2mqtt/) | Angepasste Geraete-Definitionen zur Vermeidung von Binding Table Overflow bei EFR32MG21-basierten Coordinatoren |
+
+### ha-apps — Grafana
+
+| Name | Beschreibung |
+|------|--------------|
+| [Energie-Abrechnung](ha-apps/grafana/) | Gas-Abrechnung je Wohnung aus der InfluxDB: Verbrauch in m³/l/kWh, Kosten, Saldo und empfohlener monatlicher Abschlag |
+| [Archiv-Test](ha-apps/grafana/) | Testdashboard gegen die Archivdatenbank `ha_metrics`: prueft Verbindung, Session-Zeitzone und Datenbestand je Entity und Quelle |
 
 ---
 
