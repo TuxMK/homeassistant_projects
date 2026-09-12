@@ -44,7 +44,7 @@ Alle Features des Original-Blueprints bleiben erhalten:
 2. **Blueprint importieren** klicken
 3. URL eingeben:
    ```
-   https://github.com/TuxMK/homeassistant_projects/blob/main/blueprints/low_battery/blueprint_low_battery.yaml
+   https://github.com/TuxMK/homeassistant_projects/blob/main/ha-core/blueprints/low_battery/blueprint_low_battery.yaml
    ```
 
 ### Manuell
@@ -100,7 +100,7 @@ Im Template `all_exclude_sensors` wird zusaetzlich folgendes ausgewertet:
 
 ## Verifikation
 
-Siehe [`.claude/blueprints.md`](../../.claude/blueprints.md) fuer die Validierungsschritte (YAML, Struktur, Grep).
+Siehe [`.claude/blueprints.md`](../../../.claude/blueprints.md) fuer die Validierungsschritte (YAML, Struktur, Grep).
 
 ## Lizenz
 

@@ -2,7 +2,7 @@
 
 ## Konventionen
 
-- Jeder Blueprint hat einen eigenen Ordner unter `/blueprints/`
+- Jeder Blueprint hat einen eigenen Ordner unter `ha-core/blueprints/`
 - Jeder Blueprint-Ordner enthaelt:
   - `blueprint_<name>.yaml` - Die Blueprint-Definition
   - `README.md` - Dokumentation mit Features, Installation und Konfiguration

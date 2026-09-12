@@ -111,7 +111,7 @@ The blueprint fills `entity_id`, `ts`, `value` and `unit`. `source` stays at its
 
 ### 3. pyscript connector
 
-The connector [`ha_mysql.py`](../../pyscript/apps/ha_mysql.py) belongs in
+The connector [`ha_mysql.py`](../../../ha-plugins/pyscript/apps/ha_mysql.py) belongs in
 `/config/pyscript/apps/ha_mysql.py`, together with `/config/pyscript/requirements.txt`
 containing the line `PyMySQL`.
 

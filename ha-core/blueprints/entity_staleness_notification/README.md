@@ -54,7 +54,7 @@ Dieser Blueprint erkennt "stille Ausfaelle" von Entitaeten, indem er den Zeitpun
 2. **Blueprint importieren** klicken
 3. URL eingeben:
    ```
-   https://raw.githubusercontent.com/DEIN_USERNAME/homeassistant-collection/main/blueprints/entity_staleness_notification/blueprint_entity_staleness_notification.yaml
+   https://raw.githubusercontent.com/DEIN_USERNAME/homeassistant-collection/main/ha-core/blueprints/entity_staleness_notification/blueprint_entity_staleness_notification.yaml
    ```
 
 ### Manuell
@@ -123,4 +123,4 @@ Verfuegbare Template-Variablen fuer Custom Actions:
 
 ## Lizenz
 
-MIT License - siehe [LICENSE](../../LICENSE)
+MIT License - siehe [LICENSE](../../../LICENSE)

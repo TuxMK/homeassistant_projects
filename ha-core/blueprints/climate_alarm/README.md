@@ -69,7 +69,7 @@ Dieser Blueprint ueberwacht ausgewaehlte Temperatur- und Feuchtigkeitssensoren i
 2. **Blueprint importieren** klicken
 3. URL eingeben:
    ```
-   https://raw.githubusercontent.com/DEIN_USERNAME/homeassistant-collection/main/blueprints/climate_alarm/blueprint_climate_alarm.yaml
+   https://raw.githubusercontent.com/DEIN_USERNAME/homeassistant-collection/main/ha-core/blueprints/climate_alarm/blueprint_climate_alarm.yaml
    ```
 
 ### Manuell
@@ -147,4 +147,4 @@ Nach dem Import des Blueprints:
 
 ## Lizenz
 
-MIT License - siehe [LICENSE](../../LICENSE)
+MIT License - siehe [LICENSE](../../../LICENSE)

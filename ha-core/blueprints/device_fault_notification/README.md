@@ -47,7 +47,7 @@ Dieser Blueprint ueberwacht Binary Sensoren, deren Entity-IDs bestimmten Regex-P
 2. **Blueprint importieren** klicken
 3. URL eingeben:
    ```
-   https://raw.githubusercontent.com/DEIN_USERNAME/homeassistant-collection/main/blueprints/device_fault_notification/blueprint_device_fault_notification.yaml
+   https://raw.githubusercontent.com/DEIN_USERNAME/homeassistant-collection/main/ha-core/blueprints/device_fault_notification/blueprint_device_fault_notification.yaml
    ```
 
 ### Manuell
@@ -122,6 +122,6 @@ Fuer Custom Group: `{{all_sensors_custom_group}}`, `{{sensors_custom_group}}`, e
 
 ## Lizenz
 
-MIT License - siehe [LICENSE](../LICENSE)
+MIT License - siehe [LICENSE](../../../LICENSE)
 
 Abgeleitet von "Low Battery Notifications & Actions" von Blacky.
