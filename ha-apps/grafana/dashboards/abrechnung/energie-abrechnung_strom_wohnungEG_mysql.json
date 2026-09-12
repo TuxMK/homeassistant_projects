@@ -2,7 +2,7 @@
   "apiVersion": "dashboard.grafana.app/v2",
   "kind": "Dashboard",
   "metadata": {
-    "name": "1c67e81e-f469-42de-91ef-a62097529c79",
+    "name": "energie-abrechnung-strom-eg-mariadb",
     "namespace": "default",
     "uid": "LKRPX0YycUHOrm05LNt0OMXfWjWfWWOMOafGdoLFeIMX",
     "resourceVersion": "1774691300000047",
@@ -59,54 +59,18 @@
                   "kind": "PanelQuery",
                   "spec": {
                     "query": {
-                      "kind": "DataQuery",
-                      "group": "influxdb",
-                      "version": "v0",
                       "datasource": {
-                        "name": "df2uui6kf6oe8e"
+                        "name": "afy0tg4a3q0hsc"
                       },
+                      "group": "mysql",
+                      "kind": "DataQuery",
                       "spec": {
-                        "groupBy": [
-                          {
-                            "params": [
-                              "$__interval"
-                            ],
-                            "type": "time"
-                          },
-                          {
-                            "params": [
-                              "null"
-                            ],
-                            "type": "fill"
-                          }
-                        ],
-                        "measurement": "kWh",
-                        "orderByTime": "ASC",
-                        "policy": "autogen",
-                        "query": "SELECT (last(\"value\") - first(\"value\")) AS \"Verbrauch\" FROM \"homeassistant\".\"autogen\".\"kWh\" WHERE $timeFilter AND (\"entity_id\" =~ /^$device$/)",
-                        "resultFormat": "time_series",
-                        "select": [
-                          [
-                            {
-                              "params": [
-                                "value"
-                              ],
-                              "type": "field"
-                            },
-                            {
-                              "params": [],
-                              "type": "mean"
-                            }
-                          ]
-                        ],
-                        "tags": [
-                          {
-                            "key": "entity_id::tag",
-                            "operator": "=~",
-                            "value": "/^$device$/"
-                          }
-                        ]
-                      }
+                        "editorMode": "code",
+                        "format": "time_series",
+                        "rawQuery": true,
+                        "rawSql": "SELECT $__timeGroupAlias(ts, $__interval),\n       MAX(value) AS `kWh`\nFROM states\nWHERE entity_id = '$device'\n  AND $__timeFilter(ts)\nGROUP BY time\nORDER BY time"
+                      },
+                      "version": "v0"
                     },
                     "refId": "A",
                     "hidden": false
@@ -181,102 +145,25 @@
                   "kind": "PanelQuery",
                   "spec": {
                     "query": {
-                      "kind": "DataQuery",
-                      "group": "influxdb",
-                      "version": "v0",
                       "datasource": {
-                        "name": "df2uui6kf6oe8e"
+                        "name": "afy0tg4a3q0hsc"
                       },
+                      "group": "mysql",
+                      "kind": "DataQuery",
                       "spec": {
-                        "groupBy": [
-                          {
-                            "params": [
-                              "$__interval"
-                            ],
-                            "type": "time"
-                          },
-                          {
-                            "params": [
-                              "null"
-                            ],
-                            "type": "fill"
-                          }
-                        ],
-                        "measurement": "kWh",
-                        "orderByTime": "ASC",
-                        "policy": "autogen",
-                        "query": "SELECT last(\"value\") FROM \"autogen\".\"kWh\" WHERE (\"entity_id\"::tag = 'wohnungeg_uv_1_total_active_energy') AND $timeFilter GROUP BY time($__interval) fill(null)",
-                        "rawQuery": false,
-                        "resultFormat": "time_series",
-                        "select": [
-                          [
-                            {
-                              "params": [
-                                "value"
-                              ],
-                              "type": "field"
-                            },
-                            {
-                              "params": [],
-                              "type": "last"
-                            },
-                            {
-                              "params": [
-                                "* $price"
-                              ],
-                              "type": "math"
-                            }
-                          ]
-                        ],
-                        "tags": [
-                          {
-                            "key": "entity_id::tag",
-                            "operator": "=~",
-                            "value": "/^$device$/"
-                          }
-                        ]
-                      }
+                        "editorMode": "code",
+                        "format": "time_series",
+                        "rawQuery": true,
+                        "rawSql": "SELECT bucket AS time,\n       (reading - LAG(reading) OVER (ORDER BY bucket)) * $price AS `Kosten (€)`\nFROM (\n  SELECT $__timeGroup(ts, $__interval) AS bucket,\n         MAX(value)                    AS reading\n  FROM states\n  WHERE entity_id = '$device'\n    AND $__timeFilter(ts)\n  GROUP BY bucket\n) b\nORDER BY bucket"
+                      },
+                      "version": "v0"
                     },
                     "refId": "A",
                     "hidden": false
                   }
                 }
               ],
-              "transformations": [
-                {
-                  "kind": "Transformation",
-                  "group": "calculateField",
-                  "spec": {
-                    "options": {
-                      "alias": "Verbrauch im Zeitraum",
-                      "binary": {
-                        "left": {
-                          "fixed": ""
-                        },
-                        "right": {
-                          "fixed": ""
-                        }
-                      },
-                      "cumulative": {
-                        "field": "kWh.last",
-                        "reducer": "sum"
-                      },
-                      "mode": "windowFunctions",
-                      "reduce": {
-                        "reducer": "sum"
-                      },
-                      "replaceFields": true,
-                      "window": {
-                        "field": "kWh.last",
-                        "reducer": "stdDev",
-                        "windowAlignment": "centered",
-                        "windowSize": 0.1,
-                        "windowSizeMode": "percentage"
-                      }
-                    }
-                  }
-                }
-              ],
+              "transformations": [],
               "queryOptions": {
                 "maxDataPoints": 24,
                 "interval": "1m"
@@ -353,23 +240,7 @@
                   },
                   "fieldMinMax": false
                 },
-                "overrides": [
-                  {
-                    "__systemRef": "hideSeriesFrom",
-                    "matcher": {
-                      "id": "byNames",
-                      "options": {
-                        "mode": "exclude",
-                        "names": [
-                          "kWh.mean"
-                        ],
-                        "prefix": "All except:",
-                        "readOnly": true
-                      }
-                    },
-                    "properties": []
-                  }
-                ]
+                "overrides": []
               }
             }
           }
@@ -389,59 +260,18 @@
                   "kind": "PanelQuery",
                   "spec": {
                     "query": {
-                      "kind": "DataQuery",
-                      "group": "influxdb",
-                      "version": "v0",
                       "datasource": {
-                        "name": "df2uui6kf6oe8e"
+                        "name": "afy0tg4a3q0hsc"
                       },
+                      "group": "mysql",
+                      "kind": "DataQuery",
                       "spec": {
-                        "groupBy": [
-                          {
-                            "params": [
-                              "$__interval"
-                            ],
-                            "type": "time"
-                          },
-                          {
-                            "params": [
-                              "null"
-                            ],
-                            "type": "fill"
-                          }
-                        ],
-                        "measurement": "kWh",
-                        "orderByTime": "ASC",
-                        "policy": "autogen",
-                        "resultFormat": "time_series",
-                        "select": [
-                          [
-                            {
-                              "params": [
-                                "value"
-                              ],
-                              "type": "field"
-                            },
-                            {
-                              "params": [],
-                              "type": "mean"
-                            },
-                            {
-                              "params": [
-                                "* $price"
-                              ],
-                              "type": "math"
-                            }
-                          ]
-                        ],
-                        "tags": [
-                          {
-                            "key": "entity_id::tag",
-                            "operator": "=~",
-                            "value": "/^$device$/"
-                          }
-                        ]
-                      }
+                        "editorMode": "code",
+                        "format": "time_series",
+                        "rawQuery": true,
+                        "rawSql": "SELECT $__timeGroupAlias(ts, $__interval),\n       MAX(value) * $price AS `€`\nFROM states\nWHERE entity_id = '$device'\n  AND $__timeFilter(ts)\nGROUP BY time\nORDER BY time"
+                      },
+                      "version": "v0"
                     },
                     "refId": "A",
                     "hidden": false
@@ -529,32 +359,7 @@
                   },
                   "fieldMinMax": false
                 },
-                "overrides": [
-                  {
-                    "__systemRef": "hideSeriesFrom",
-                    "matcher": {
-                      "id": "byNames",
-                      "options": {
-                        "mode": "exclude",
-                        "names": [
-                          "kWh.mean"
-                        ],
-                        "prefix": "All except:",
-                        "readOnly": true
-                      }
-                    },
-                    "properties": [
-                      {
-                        "id": "custom.hideFrom",
-                        "value": {
-                          "legend": false,
-                          "tooltip": true,
-                          "viz": true
-                        }
-                      }
-                    ]
-                  }
-                ]
+                "overrides": []
               }
             }
           }
@@ -574,54 +379,18 @@
                   "kind": "PanelQuery",
                   "spec": {
                     "query": {
-                      "kind": "DataQuery",
-                      "group": "influxdb",
-                      "version": "v0",
                       "datasource": {
-                        "name": "df2uui6kf6oe8e"
+                        "name": "afy0tg4a3q0hsc"
                       },
+                      "group": "mysql",
+                      "kind": "DataQuery",
                       "spec": {
-                        "groupBy": [
-                          {
-                            "params": [
-                              "$__interval"
-                            ],
-                            "type": "time"
-                          },
-                          {
-                            "params": [
-                              "null"
-                            ],
-                            "type": "fill"
-                          }
-                        ],
-                        "measurement": "kWh",
-                        "orderByTime": "ASC",
-                        "policy": "autogen",
-                        "query": "SELECT (last(\"value\") - first(\"value\")) AS \"Verbrauch\" FROM \"homeassistant\".\"autogen\".\"kWh\" WHERE $timeFilter AND (\"entity_id\" =~ /^$device$/)",
-                        "resultFormat": "time_series",
-                        "select": [
-                          [
-                            {
-                              "params": [
-                                "value"
-                              ],
-                              "type": "field"
-                            },
-                            {
-                              "params": [],
-                              "type": "mean"
-                            }
-                          ]
-                        ],
-                        "tags": [
-                          {
-                            "key": "entity_id::tag",
-                            "operator": "=~",
-                            "value": "/^$device$/"
-                          }
-                        ]
-                      }
+                        "editorMode": "code",
+                        "format": "time_series",
+                        "rawQuery": true,
+                        "rawSql": "SELECT $__timeGroupAlias(ts, $__interval),\n       MAX(value) AS `kWh`\nFROM states\nWHERE entity_id = '$device'\n  AND $__timeFilter(ts)\nGROUP BY time\nORDER BY time"
+                      },
+                      "version": "v0"
                     },
                     "refId": "A",
                     "hidden": false
@@ -696,53 +465,18 @@
                   "kind": "PanelQuery",
                   "spec": {
                     "query": {
-                      "kind": "DataQuery",
-                      "group": "influxdb",
-                      "version": "v0",
                       "datasource": {
-                        "name": "df2uui6kf6oe8e"
+                        "name": "afy0tg4a3q0hsc"
                       },
+                      "group": "mysql",
+                      "kind": "DataQuery",
                       "spec": {
-                        "groupBy": [
-                          {
-                            "params": [
-                              "$__interval"
-                            ],
-                            "type": "time"
-                          },
-                          {
-                            "params": [
-                              "null"
-                            ],
-                            "type": "fill"
-                          }
-                        ],
-                        "measurement": "kWh",
-                        "orderByTime": "ASC",
-                        "policy": "autogen",
-                        "resultFormat": "time_series",
-                        "select": [
-                          [
-                            {
-                              "params": [
-                                "value"
-                              ],
-                              "type": "field"
-                            },
-                            {
-                              "params": [],
-                              "type": "mean"
-                            }
-                          ]
-                        ],
-                        "tags": [
-                          {
-                            "key": "entity_id::tag",
-                            "operator": "=~",
-                            "value": "/^$device$/"
-                          }
-                        ]
-                      }
+                        "editorMode": "code",
+                        "format": "time_series",
+                        "rawQuery": true,
+                        "rawSql": "SELECT $__timeGroupAlias(ts, $__interval),\n       MAX(value) AS `kWh`\nFROM states\nWHERE entity_id = '$device'\n  AND $__timeFilter(ts)\nGROUP BY time\nORDER BY time"
+                      },
+                      "version": "v0"
                     },
                     "refId": "A",
                     "hidden": false
@@ -830,32 +564,7 @@
                   },
                   "fieldMinMax": false
                 },
-                "overrides": [
-                  {
-                    "__systemRef": "hideSeriesFrom",
-                    "matcher": {
-                      "id": "byNames",
-                      "options": {
-                        "mode": "exclude",
-                        "names": [
-                          "kWh.mean"
-                        ],
-                        "prefix": "All except:",
-                        "readOnly": true
-                      }
-                    },
-                    "properties": [
-                      {
-                        "id": "custom.hideFrom",
-                        "value": {
-                          "legend": false,
-                          "tooltip": true,
-                          "viz": true
-                        }
-                      }
-                    ]
-                  }
-                ]
+                "overrides": []
               }
             }
           }
@@ -875,96 +584,25 @@
                   "kind": "PanelQuery",
                   "spec": {
                     "query": {
-                      "kind": "DataQuery",
-                      "group": "influxdb",
-                      "version": "v0",
                       "datasource": {
-                        "name": "df2uui6kf6oe8e"
+                        "name": "afy0tg4a3q0hsc"
                       },
+                      "group": "mysql",
+                      "kind": "DataQuery",
                       "spec": {
-                        "groupBy": [
-                          {
-                            "params": [
-                              "$__interval"
-                            ],
-                            "type": "time"
-                          },
-                          {
-                            "params": [
-                              "null"
-                            ],
-                            "type": "fill"
-                          }
-                        ],
-                        "measurement": "kWh",
-                        "orderByTime": "ASC",
-                        "policy": "autogen",
-                        "query": "SELECT last(\"value\") FROM \"autogen\".\"kWh\" WHERE (\"entity_id\"::tag = 'wohnungeg_uv_1_total_active_energy') AND $timeFilter GROUP BY time($__interval) fill(null)",
-                        "rawQuery": false,
-                        "resultFormat": "time_series",
-                        "select": [
-                          [
-                            {
-                              "params": [
-                                "value"
-                              ],
-                              "type": "field"
-                            },
-                            {
-                              "params": [],
-                              "type": "last"
-                            }
-                          ]
-                        ],
-                        "tags": [
-                          {
-                            "key": "entity_id::tag",
-                            "operator": "=~",
-                            "value": "/^$device$/"
-                          }
-                        ]
-                      }
+                        "editorMode": "code",
+                        "format": "time_series",
+                        "rawQuery": true,
+                        "rawSql": "SELECT bucket AS time,\n       (reading - LAG(reading) OVER (ORDER BY bucket)) AS `Verbrauch (kWh)`\nFROM (\n  SELECT $__timeGroup(ts, $__interval) AS bucket,\n         MAX(value)                    AS reading\n  FROM states\n  WHERE entity_id = '$device'\n    AND $__timeFilter(ts)\n  GROUP BY bucket\n) b\nORDER BY bucket"
+                      },
+                      "version": "v0"
                     },
                     "refId": "A",
                     "hidden": false
                   }
                 }
               ],
-              "transformations": [
-                {
-                  "kind": "Transformation",
-                  "group": "calculateField",
-                  "spec": {
-                    "options": {
-                      "alias": "Verbrauch im Zeitraum",
-                      "binary": {
-                        "left": {
-                          "fixed": ""
-                        },
-                        "right": {
-                          "fixed": ""
-                        }
-                      },
-                      "cumulative": {
-                        "field": "kWh.last",
-                        "reducer": "sum"
-                      },
-                      "mode": "windowFunctions",
-                      "reduce": {
-                        "reducer": "sum"
-                      },
-                      "replaceFields": true,
-                      "window": {
-                        "field": "kWh.last",
-                        "reducer": "stdDev",
-                        "windowAlignment": "centered",
-                        "windowSize": 0.1,
-                        "windowSizeMode": "percentage"
-                      }
-                    }
-                  }
-                }
-              ],
+              "transformations": [],
               "queryOptions": {
                 "maxDataPoints": 24,
                 "interval": "1m"
@@ -1041,23 +679,7 @@
                   },
                   "fieldMinMax": false
                 },
-                "overrides": [
-                  {
-                    "__systemRef": "hideSeriesFrom",
-                    "matcher": {
-                      "id": "byNames",
-                      "options": {
-                        "mode": "exclude",
-                        "names": [
-                          "kWh.mean"
-                        ],
-                        "prefix": "All except:",
-                        "readOnly": true
-                      }
-                    },
-                    "properties": []
-                  }
-                ]
+                "overrides": []
               }
             }
           }
@@ -1077,60 +699,18 @@
                   "kind": "PanelQuery",
                   "spec": {
                     "query": {
-                      "kind": "DataQuery",
-                      "group": "influxdb",
-                      "version": "v0",
                       "datasource": {
-                        "name": "df2uui6kf6oe8e"
+                        "name": "afy0tg4a3q0hsc"
                       },
+                      "group": "mysql",
+                      "kind": "DataQuery",
                       "spec": {
-                        "groupBy": [
-                          {
-                            "params": [
-                              "$__interval"
-                            ],
-                            "type": "time"
-                          },
-                          {
-                            "params": [
-                              "null"
-                            ],
-                            "type": "fill"
-                          }
-                        ],
-                        "measurement": "kWh",
-                        "orderByTime": "ASC",
-                        "policy": "autogen",
-                        "query": "SELECT (last(\"value\") - first(\"value\")) AS \"Verbrauch\" FROM \"homeassistant\".\"autogen\".\"kWh\" WHERE $timeFilter AND (\"entity_id\" =~ /^$device$/)",
-                        "resultFormat": "time_series",
-                        "select": [
-                          [
-                            {
-                              "params": [
-                                "value"
-                              ],
-                              "type": "field"
-                            },
-                            {
-                              "params": [],
-                              "type": "mean"
-                            },
-                            {
-                              "params": [
-                                "* $price"
-                              ],
-                              "type": "math"
-                            }
-                          ]
-                        ],
-                        "tags": [
-                          {
-                            "key": "entity_id::tag",
-                            "operator": "=~",
-                            "value": "/^$device$/"
-                          }
-                        ]
-                      }
+                        "editorMode": "code",
+                        "format": "time_series",
+                        "rawQuery": true,
+                        "rawSql": "SELECT $__timeGroupAlias(ts, $__interval),\n       MAX(value) * $price AS `€`\nFROM states\nWHERE entity_id = '$device'\n  AND $__timeFilter(ts)\nGROUP BY time\nORDER BY time"
+                      },
+                      "version": "v0"
                     },
                     "refId": "A",
                     "hidden": false
@@ -1205,60 +785,18 @@
                   "kind": "PanelQuery",
                   "spec": {
                     "query": {
-                      "kind": "DataQuery",
-                      "group": "influxdb",
-                      "version": "v0",
                       "datasource": {
-                        "name": "df2uui6kf6oe8e"
+                        "name": "afy0tg4a3q0hsc"
                       },
+                      "group": "mysql",
+                      "kind": "DataQuery",
                       "spec": {
-                        "groupBy": [
-                          {
-                            "params": [
-                              "$__interval"
-                            ],
-                            "type": "time"
-                          },
-                          {
-                            "params": [
-                              "null"
-                            ],
-                            "type": "fill"
-                          }
-                        ],
-                        "measurement": "kWh",
-                        "orderByTime": "ASC",
-                        "policy": "autogen",
-                        "query": "SELECT (last(\"value\") - first(\"value\")) AS \"Verbrauch\" FROM \"homeassistant\".\"autogen\".\"kWh\" WHERE $timeFilter AND (\"entity_id\" =~ /^$device$/)",
-                        "resultFormat": "time_series",
-                        "select": [
-                          [
-                            {
-                              "params": [
-                                "value"
-                              ],
-                              "type": "field"
-                            },
-                            {
-                              "params": [],
-                              "type": "mean"
-                            },
-                            {
-                              "params": [
-                                "* $price"
-                              ],
-                              "type": "math"
-                            }
-                          ]
-                        ],
-                        "tags": [
-                          {
-                            "key": "entity_id::tag",
-                            "operator": "=~",
-                            "value": "/^$device$/"
-                          }
-                        ]
-                      }
+                        "editorMode": "code",
+                        "format": "time_series",
+                        "rawQuery": true,
+                        "rawSql": "SELECT $__timeGroupAlias(ts, $__interval),\n       MAX(value) * $price AS `€`\nFROM states\nWHERE entity_id = '$device'\n  AND $__timeFilter(ts)\nGROUP BY time\nORDER BY time"
+                      },
+                      "version": "v0"
                     },
                     "refId": "A",
                     "hidden": false
@@ -1450,13 +988,13 @@
     "tags": [
       "homeassistant",
       "energy",
-      "influxdb"
+      "mariadb"
     ],
     "timeSettings": {
       "timezone": "browser",
       "from": "now-24h",
       "to": "now",
-      "autoRefresh": "1m",
+      "autoRefresh": "",
       "autoRefreshIntervals": [
         "5s",
         "10s",
@@ -1472,35 +1010,38 @@
       "hideTimepicker": false,
       "fiscalYearStartMonth": 0
     },
-    "title": "Energie-Abrechnung (Strom) - Wohnung EG",
+    "title": "Energie-Abrechnung (Strom) - Wohnung EG [MariaDB]",
     "variables": [
       {
         "kind": "QueryVariable",
         "spec": {
           "name": "device",
           "current": {
-            "text": "wohnungeg_uv_1_total_active_energy",
-            "value": "wohnungeg_uv_1_total_active_energy"
+            "text": "sensor.wohnungeg_uv_1_total_active_energy",
+            "value": "sensor.wohnungeg_uv_1_total_active_energy"
           },
           "label": "Zähler / Gerät",
           "hide": "dontHide",
           "refresh": "onTimeRangeChanged",
           "skipUrlSync": false,
           "query": {
-            "kind": "DataQuery",
-            "group": "influxdb",
-            "version": "v0",
             "datasource": {
-              "name": "df2uui6kf6oe8e"
+              "name": "afy0tg4a3q0hsc"
             },
+            "group": "mysql",
+            "kind": "DataQuery",
             "spec": {
-              "query": "SHOW TAG VALUES FROM \"kWh\" WITH KEY = \"entity_id\"",
-              "refId": "InfluxVariableQueryEditor-VariableQuery"
-            }
+              "editorMode": "code",
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT DISTINCT entity_id\nFROM states\nWHERE unit = 'kWh'\nORDER BY entity_id",
+              "refId": "MySQLVariableQueryEditor-VariableQuery"
+            },
+            "version": "v0"
           },
           "regex": "",
           "sort": "alphabeticalAsc",
-          "definition": "SHOW TAG VALUES FROM \"kWh\" WITH KEY = \"entity_id\"",
+          "definition": "SELECT DISTINCT entity_id\nFROM states\nWHERE unit = 'kWh'\nORDER BY entity_id",
           "options": [],
           "multi": false,
           "includeAll": false,

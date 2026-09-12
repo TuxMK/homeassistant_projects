@@ -8,7 +8,7 @@ Oberste Ebene nach Ziel-System gegliedert:
 
 - `ha-core/` — Inhalte der Home-Assistant-Konfiguration (Blueprints, Automationen, Templates, Dashboards)
 - `ha-plugins/` — Erweiterungen innerhalb von Home Assistant (Pyscript)
-- `ha-apps/` — eigenstaendige Anwendungen neben Home Assistant (Zigbee2MQTT)
+- `ha-apps/` — eigenstaendige Anwendungen neben Home Assistant (Zigbee2MQTT, Grafana)
 
 ```
 /
@@ -37,7 +37,10 @@ Oberste Ebene nach Ziel-System gegliedert:
 ├── ha-plugins/
 │   └── pyscript/apps/                    # Pyscript-Apps (ha_mysql.py -> Aktion pyscript.sql_execute)
 ├── ha-apps/
-│   └── zigbee2mqtt/                      # Zigbee2MQTT-Konfiguration und Overrides
+│   ├── zigbee2mqtt/                      # Zigbee2MQTT-Konfiguration und Overrides
+│   └── grafana/dashboards/               # Grafana-Dashboards (JSON, Import ueber die Grafana-UI)
+│       ├── abrechnung/                   # Energie-Abrechnung je Wohnung (*_influx.json / *_mysql.json)
+│       └── test/                         # Verbindungs-/Datentest gegen ha_metrics (MariaDB)
 ├── LICENSE                               # MIT License
 └── README.md                             # Projekt-Uebersicht
 ```
@@ -78,6 +81,18 @@ ignoriert (grau statt rot) — unbekannte Melder sind kein Fehler.
   - Installationsanleitung (UI und manuell)
   - Konfigurationsoptionen
   - Beispiele
+
+### Grafana-Dashboards (`ha-apps/grafana/`)
+- Gegliedert nach Zweck, nicht nach Datenquelle: `dashboards/abrechnung/` enthaelt die
+  Energie-Abrechnung, `dashboards/test/` das Test-Dashboard.
+- Die Datenquelle steht im Dateinamen-Suffix: `_influx` (InfluxDB, Altbestand) und
+  `_mysql` (MariaDB `ha_metrics`). Beide Fassungen desselben Dashboards haben
+  unterschiedliche UIDs und Titel und lassen sich parallel importieren.
+- Sprachregelung: Die vorhandenen Dashboards heissen **Abrechnung**, nicht "Archiv".
+  "Archiv" bezeichnet ausschliesslich die Datenhaltung — die MariaDB `ha_metrics` und
+  die Blueprints `archiv_metrics`/`archiv_partitions`.
+- Titel und UID stehen in der JSON-Datei (Schema v2: `spec.title` / `metadata.name`) und
+  sind die Referenz fuer die Tabelle in [ha-apps/grafana/README.md](../ha-apps/grafana/README.md).
 
 ## Themenspezifische Anleitungen
 

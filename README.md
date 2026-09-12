@@ -75,8 +75,8 @@ Das Repository ist nach Ziel-System gegliedert:
 
 | Name | Beschreibung |
 |------|--------------|
-| [Energie-Abrechnung](ha-apps/grafana/) | Gas-Abrechnung je Wohnung aus der InfluxDB: Verbrauch in m³/l/kWh, Kosten, Saldo und empfohlener monatlicher Abschlag |
-| [Archiv-Test](ha-apps/grafana/) | Testdashboard gegen die Archivdatenbank `ha_metrics`: prueft Verbindung, Session-Zeitzone und Datenbestand je Entity und Quelle |
+| [Energie-Abrechnung](ha-apps/grafana/) | Gas- und Strom-Abrechnung je Wohnung: Verbrauch in m³/l/kWh, Kosten, Saldo und empfohlener monatlicher Abschlag — je Dashboard eine Fassung gegen InfluxDB (`_influx`, Altbestand) und gegen `ha_metrics` (`_mysql`) |
+| [Test-Dashboard](ha-apps/grafana/) | Verbindungs- und Datentest gegen die MariaDB `ha_metrics`: prueft Verbindung, Session-Zeitzone und Datenbestand je Entity und Quelle |
 
 ---
 
