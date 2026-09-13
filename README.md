@@ -8,7 +8,7 @@ Das Repository ist nach Ziel-System gegliedert:
 
 | Bereich | Inhalt |
 |---------|--------|
-| [ha-core/](ha-core/) | Alles, was direkt in die Home-Assistant-Konfiguration gehoert: Blueprints, Automationen, Templates, Custom Templates und Dashboards |
+| [ha-core/](ha-core/) | Alles, was direkt in die Home-Assistant-Konfiguration gehoert: Blueprints, Automationen, Templates, Custom Templates, Dashboards und Scripts rund um die HA-Datenbank |
 | [ha-plugins/](ha-plugins/) | Erweiterungen/Integrationen innerhalb von Home Assistant (Pyscript-Apps) |
 | [ha-apps/](ha-apps/) | Eigenstaendige Anwendungen neben Home Assistant (Zigbee2MQTT, Grafana) |
 
@@ -31,6 +31,12 @@ Das Repository ist nach Ziel-System gegliedert:
 | Name | Beschreibung |
 |------|--------------|
 | [MQTT Pulse Counter Cleanup](ha-core/automations/mqtt_pulse_counter_cleanup/) | Bereinigt und verrechnet Zaehlerimpulse aus MQTT (Passthrough + Delta-Berechnung) |
+
+### ha-core — Scripts
+
+| Name | Beschreibung |
+|------|--------------|
+| [SQLite → MariaDB](ha-core/scripts/sqlite_to_mariadb/) | Migriert die Recorder-Datenbank samt Verlauf und Langzeitstatistik von SQLite nach MariaDB — im laufenden Betrieb, mit Delta-Lauf vor dem Neustart |
 
 ### ha-core — Custom Templates
 

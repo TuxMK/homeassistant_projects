@@ -6,7 +6,7 @@ Dieses Repository ist eine Sammlung von Blueprints, Konfigurationen, Skripten un
 
 Oberste Ebene nach Ziel-System gegliedert:
 
-- `ha-core/` — Inhalte der Home-Assistant-Konfiguration (Blueprints, Automationen, Templates, Dashboards)
+- `ha-core/` — Inhalte der Home-Assistant-Konfiguration (Blueprints, Automationen, Templates, Dashboards, Scripts)
 - `ha-plugins/` — Erweiterungen innerhalb von Home Assistant (Pyscript)
 - `ha-apps/` — eigenstaendige Anwendungen neben Home Assistant (Zigbee2MQTT, Grafana)
 
@@ -33,7 +33,9 @@ Oberste Ebene nach Ziel-System gegliedert:
 │   │   ├── waste_widget/                 # Nächste Müllabholung
 │   │   ├── statistics_widget/            # Navigation zur Statistik-/Energie-Ansicht
 │   │   └── billing_widget/               # Navigation zum Abrechnungs-Dashboard
-│   └── automations/                      # Standalone-Automationen (mqtt_pulse_counter_cleanup)
+│   ├── automations/                      # Standalone-Automationen (mqtt_pulse_counter_cleanup)
+│   └── scripts/
+│       └── sqlite_to_mariadb/            # Recorder-Migration SQLite -> MariaDB (Python + Bash-Wrapper, im laufenden Betrieb)
 ├── ha-plugins/
 │   └── pyscript/apps/                    # Pyscript-Apps (ha_mysql.py -> Aktion pyscript.sql_execute)
 ├── ha-apps/
