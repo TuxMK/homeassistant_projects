@@ -1,9 +1,9 @@
-# Wetter-Widget für Übersichts-Dashboard
-# Zeigt die aktuelle Wetterlage (Zustand, Temperatur, Wind) an.
+# Weather widget for the overview dashboard
+# Shows the current weather (condition, temperature, wind).
 #
-# Voraussetzungen:
-# - Wetter-Entity "weather.forecast_wetter" (Name ggf. anpassen)
-# - Mushroom Cards (via HACS installieren)
+# Requirements:
+# - Weather entity "weather.forecast_wetter" (adjust the name if needed)
+# - Mushroom Cards (install via HACS)
 
 type: custom:mushroom-template-card
 primary: |

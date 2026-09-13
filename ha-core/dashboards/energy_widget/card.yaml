@@ -1,10 +1,10 @@
-# Energie-Widget für Übersichts-Dashboard
-# Zeigt PV-Erzeugung, Netzbezug/-einspeisung und Akku-Ladestand an
-# und verlinkt auf die Energie-Ansicht.
+# Energy widget for the overview dashboard
+# Shows PV production, grid import/export and battery charge level
+# and links to the energy view.
 #
-# Voraussetzungen:
-# - SENEC-Integration mit den solaranlage_senec_home_v3_hybrid_duo_*-Entities
-# - Mushroom Cards (via HACS installieren)
+# Requirements:
+# - SENEC integration with the solaranlage_senec_home_v3_hybrid_duo_* entities
+# - Mushroom Cards (install via HACS)
 
 type: custom:mushroom-template-card
 primary: Energie

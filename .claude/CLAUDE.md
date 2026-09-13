@@ -68,9 +68,12 @@ ignoriert (grau statt rot) — unbekannte Melder sind kein Fehler.
 ## Konventionen
 
 ### Sprache
-- Dokumentation: Deutsch
-- Code/YAML-Kommentare: Deutsch oder Englisch
-- Umlaute: In sichtbarem Text (Karten-Anzeige, Kommentare, Dokumentation) werden
+- Dokumentation (README.md, Anleitungen): Deutsch
+- Kommentare im Code (Python, Bash, JS, YAML, Jinja): Englisch — auch Kommentare in
+  Code-Beispielen innerhalb der READMEs. Sichtbare Texte (Karten-Anzeige, Blueprint-
+  Beschreibungen) sind keine Kommentare und bleiben, wie sie sind.
+- Blueprint-Feldnamen stehen in den READMEs so, wie das Formular sie zeigt (englisch).
+- Umlaute: In sichtbarem deutschem Text (Karten-Anzeige, Dokumentation) werden
   echte Umlaute (ä, ö, ü, ß) verwendet.
 - Ausnahme: Technische Bezeichner bleiben unverändert bei ihrer eindeutigen
   ASCII-Schreibweise — Entity-IDs (z. B. `sensor.nachste_abholung`,

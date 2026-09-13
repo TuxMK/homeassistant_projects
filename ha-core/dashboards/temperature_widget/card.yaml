@@ -1,12 +1,12 @@
-# Temperatur-Widget für Übersichts-Dashboard
-# Zeigt die Temperaturen von Kühl-/Gefrierschränken an und verlinkt auf die
-# Temperatur-Alarm-Ansicht.
+# Temperature widget for the overview dashboard
+# Shows the fridge/freezer temperatures and links to the
+# temperature alarm view.
 #
-# Voraussetzungen:
+# Requirements:
 # - sensor.kuhlschrank_wohnungeg_kuche_temperature
 # - sensor.kuhlschrank_wohnungeg_keller_temperature
 # - sensor.gefrierschrank_wohnungeg_keller_temperature
-# - Mushroom Cards (via HACS installieren)
+# - Mushroom Cards (install via HACS)
 
 type: custom:mushroom-template-card
 primary: Temperatur

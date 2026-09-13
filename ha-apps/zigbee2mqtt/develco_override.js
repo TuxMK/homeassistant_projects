@@ -1,15 +1,15 @@
 /**
- * External Converter fuer Develco SMSZB-120 Rauchmelder
+ * External converter for the Develco SMSZB-120 smoke detector
  *
- * Dieser Converter deaktiviert die automatische Configure-Funktion,
- * um Abstuerze bei Zigbee Coordinatoren mit begrenzter Binding Table zu verhindern.
+ * This converter disables the automatic configure function to prevent
+ * crashes on Zigbee coordinators with a limited binding table.
  *
- * Getestet mit: SLZB-06M (EFR32MG21 Chip)
+ * Tested with: SLZB-06M (EFR32MG21 chip)
  *
  * Installation:
- * 1. Diese Datei in den Zigbee2MQTT Konfigurationsordner kopieren
- * 2. In configuration.yaml eintragen (siehe README.md)
- * 3. Zigbee2MQTT neustarten
+ * 1. Copy this file into the Zigbee2MQTT configuration folder
+ * 2. Register it in configuration.yaml (see README.md)
+ * 3. Restart Zigbee2MQTT
  */
 
 const fz = require('zigbee-herdsman-converters/converters/fromZigbee');
@@ -45,7 +45,7 @@ const definition = {
         e.temperature(),
         e.warning(),
     ],
-    // WICHTIG: Keine configure-Funktion = keine Bindings = kein Crash
+    // IMPORTANT: no configure function = no bindings = no crash
 };
 
 module.exports = definition;

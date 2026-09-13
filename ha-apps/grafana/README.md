@@ -508,9 +508,9 @@ Zur Erinnerung, die abgefragte Tabelle:
 ```sql
 CREATE TABLE states (
   entity_id VARCHAR(255)  NOT NULL,
-  ts        DATETIME(3)   NOT NULL,                    -- immer UTC
-  value     DOUBLE        NULL,                        -- numerischer Wert
-  state     VARCHAR(255)  NULL,                        -- Rohzustand als Text
+  ts        DATETIME(3)   NOT NULL,                    -- always UTC
+  value     DOUBLE        NULL,                        -- numeric value
+  state     VARCHAR(255)  NULL,                        -- raw state as text
   unit      VARCHAR(32)   NULL,
   source    VARCHAR(16)   NOT NULL DEFAULT 'ha',       -- ha / import / manual
   PRIMARY KEY (entity_id, ts)

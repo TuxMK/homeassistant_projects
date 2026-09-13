@@ -1,9 +1,9 @@
-# Pool-Widget für Übersichts-Dashboard
-# Zeigt Pool-Temperatur und Pumpenstatus an und verlinkt auf die Pool-Ansicht.
+# Pool widget for the overview dashboard
+# Shows the pool temperature and pump status and links to the pool view.
 #
-# Voraussetzungen:
+# Requirements:
 # - sensor.pool_pumpe_temperatur, binary_sensor.pool_pumpe_betriebszustand
-# - Mushroom Cards (via HACS installieren)
+# - Mushroom Cards (install via HACS)
 
 type: custom:mushroom-template-card
 primary: |

@@ -1,78 +1,79 @@
-# Migration InfluxDB 1.x -> MariaDB archive
+# Migration InfluxDB 1.x -> MariaDB-Archiv
 
-Two scripts that move the history of the InfluxDB integration into the archive table
-of the blueprint [Metrics Archive (MariaDB)](../). They get by with what is on the
-machines anyway — `docker` for the export, `awk` and the `mysql` client for the import.
-No Python, no `influxdb` package, no database driver.
+Zwei Skripte, die den Verlauf der InfluxDB-Integration in die Archivtabelle des
+Blueprints [Metrics Archive (MariaDB)](../) übertragen. Sie kommen mit dem aus, was auf den
+Maschinen ohnehin vorhanden ist — `docker` für den Export, `awk` und der `mysql`-Client für
+den Import. Kein Python, kein `influxdb`-Paket, kein Datenbanktreiber.
 
-| Script | Purpose |
-|--------|---------|
-| [`influx_export_monthly.sh`](influx_export_monthly.sh) | Exports everything unchanged as line protocol, one file per month |
-| [`influx_import_mysql.sh`](influx_import_mysql.sh) | Converts the dumps and pipes them straight into MariaDB, without intermediate files |
+| Skript | Zweck |
+|--------|-------|
+| [`influx_export_monthly.sh`](influx_export_monthly.sh) | Exportiert alles unverändert als Line Protocol, eine Datei pro Monat |
+| [`influx_import_mysql.sh`](influx_import_mysql.sh) | Wandelt die Dumps um und leitet sie direkt in MariaDB, ohne Zwischendateien |
 
-`influx_export_monthly.sh` runs on the Home Assistant host (SSH add-on), because it needs
-the container; `influx_import_mysql.sh` runs wherever the dump files end up, as long as
-the database can be reached from there.
+`influx_export_monthly.sh` läuft auf dem Home-Assistant-Host (SSH-Add-on), weil es den
+Container braucht; `influx_import_mysql.sh` läuft dort, wo die Dump-Dateien landen,
+solange die Datenbank von dort aus erreichbar ist.
 
-## How the schemas map onto each other
+## Wie die Schemata zueinander passen
 
-Home Assistant writes into InfluxDB in a shape that does not match the archive table
-one to one. Two details matter:
+Home Assistant schreibt in InfluxDB in einer Form, die nicht eins zu eins zur Archivtabelle
+passt. Zwei Details sind wichtig:
 
-- The tag `entity_id` holds **only the object id**, without the domain. The full entity
-  id is `domain + '.' + entity_id`, and the import assembles it from both tags.
-- The measurement name **is** the `unit_of_measurement`. Where a state carries no unit,
-  Home Assistant falls back to the full entity id as the measurement name. Such a name
-  contains a dot — the import recognizes it and leaves `unit` empty.
+- Der Tag `entity_id` enthält **nur die Object-ID**, ohne Domain. Die vollständige
+  Entity-ID ist `domain + '.' + entity_id`, und der Import setzt sie aus beiden Tags zusammen.
+- Der Measurement-Name **ist** die `unit_of_measurement`. Hat ein Zustand keine Einheit,
+  verwendet Home Assistant ersatzweise die vollständige Entity-ID als Measurement-Namen.
+  Ein solcher Name enthält einen Punkt — der Import erkennt das und lässt `unit` leer.
 
-| InfluxDB | Archive table |
+| InfluxDB | Archivtabelle |
 |----------|---------------|
-| tag `domain` + tag `entity_id` | `entity_id` |
+| Tag `domain` + Tag `entity_id` | `entity_id` |
 | `time` (UTC) | `ts` (`DATETIME(3)`, UTC) |
-| field `value` | `value` |
-| field `state` | `state` |
-| measurement name | `unit` (empty if it contains a dot) |
+| Feld `value` | `value` |
+| Feld `state` | `state` |
+| Measurement-Name | `unit` (leer, wenn er einen Punkt enthält) |
 | — | `source` = `import` |
 
-`source = 'import'` is exactly what the column was made for: rows from the migration stay
-distinguishable from those written by the running automation (`ha`) and from manual
-corrections (`manual`).
+`source = 'import'` ist genau das, wofür die Spalte gedacht ist: Zeilen aus der Migration
+bleiben unterscheidbar von denen, die die laufende Automation schreibt (`ha`), und von
+manuellen Korrekturen (`manual`).
 
-## 1. Stop the writing, not the add-on
+## 1. Das Schreiben stoppen, nicht das Add-on
 
-**Settings > Devices & services > InfluxDB > disable.** That stops Home Assistant from
-writing while the export runs, and the container keeps running — which it has to, since
-everything below goes through `docker exec`. Stopping the add-on would take the container
-away with it.
+**Einstellungen > Geräte & Dienste > InfluxDB > Deaktivieren.** Damit hört Home Assistant
+auf zu schreiben, während der Export läuft, und der Container läuft weiter — was er auch
+muss, denn alles Weitere geht über `docker exec`. Das Add-on zu stoppen würde den
+Container mitnehmen.
 
-## 2. Write the dump
+## 2. Den Dump schreiben
 
-[`influx_export_monthly.sh`](influx_export_monthly.sh) does it month by month. Adjust the
-block at the top — `CONTAINER`, `DB`, `START`, `END` — and run it on the HA host:
+[`influx_export_monthly.sh`](influx_export_monthly.sh) erledigt das Monat für Monat. Passe
+den Block oben an — `CONTAINER`, `DB`, `START`, `END` — und führe es auf dem HA-Host aus:
 
 ```bash
 zsh influx_export_monthly.sh
 ```
 
-It finds the data directories inside the container by itself, exports one file per month
-into `influx_export/`, skips months without data, and reports the number of points per
-file — split into TSM and WAL. `DRYRUN=1` prints the commands instead of running them.
+Es findet die Datenverzeichnisse im Container selbst, exportiert eine Datei pro Monat
+nach `influx_export/`, überspringt Monate ohne Daten und meldet die Anzahl der Punkte pro
+Datei — aufgeteilt nach TSM und WAL. `DRYRUN=1` gibt die Befehle aus, statt sie auszuführen.
 
-**Two traps it guards against.** If the data directory holds no `.tsm` files, the export
-would silently produce files that look plausible but contain only the write-ahead log;
-the script counts them up front and stops. And `influx_inspect` does not apply
-`-start`/`-end` to the WAL in every version, so its rows — the most recent writes — would
-land in *every* monthly file, including months from years back. The WAL belongs to the
-newest month, so that is the only one exported with the real `waldir`.
+**Zwei Fallen, gegen die es sich absichert.** Enthält das Datenverzeichnis keine
+`.tsm`-Dateien, würde der Export stillschweigend Dateien erzeugen, die plausibel aussehen,
+aber nur das Write-Ahead-Log enthalten; das Skript zählt sie vorab und bricht ab. Und
+`influx_inspect` wendet `-start`/`-end` nicht in jeder Version auf das WAL an, sodass dessen
+Zeilen — die jüngsten Schreibvorgänge — in *jeder* Monatsdatei landen würden, auch in
+Monaten von vor Jahren. Das WAL gehört zum neuesten Monat, deshalb wird nur dieser mit dem
+echten `waldir` exportiert.
 
-A file reported as `!! WAL only, no stored data` means nothing stored was found for that
-period — either the month genuinely holds no data, or `DATADIR` points at the wrong
-place. If it says that for *every* month, locate the shards with
-`docker exec <container> find / -name '*.tsm' 2>/dev/null | head` and set `DATADIR` and
-`WALDIR` at the top of the script by hand.
+Eine Datei mit der Meldung `!! WAL only, no stored data` bedeutet, dass für diesen Zeitraum
+nichts Gespeichertes gefunden wurde — entweder enthält der Monat tatsächlich keine Daten,
+oder `DATADIR` zeigt an die falsche Stelle. Steht das bei *jedem* Monat, finde die Shards mit
+`docker exec <container> find / -name '*.tsm' 2>/dev/null | head` und setze `DATADIR` und
+`WALDIR` oben im Skript von Hand.
 
-Under the hood it is `influx_inspect export` with `-start`/`-end` per month. By hand, for
-one period, that is:
+Unter der Haube ist das `influx_inspect export` mit `-start`/`-end` pro Monat. Von Hand, für
+einen Zeitraum, sieht das so aus:
 
 ```bash
 docker exec addon_a0d7b954_influxdb \
@@ -85,94 +86,98 @@ docker exec addon_a0d7b954_influxdb \
     -compress
 ```
 
-Should those paths not exist, `find /data -name '*.tsm' | head` names the real ones — the
-add-on stores its data under `/data`, but the layout has changed across versions.
+Sollten diese Pfade nicht existieren, nennt `find /data -name '*.tsm' | head` die echten — das
+Add-on legt seine Daten unter `/data` ab, aber die Struktur hat sich zwischen Versionen geändert.
 
-**Why not `influx -format csv`:** for a single known measurement, selecting the columns
-by hand works fine. Across all measurements it does not: CSV carries no types, so `42i`
-(integer) can no longer be told from `42` (float) or from a string on the way back, and a
-`friendly_name` containing a comma shifts the columns. `influx_inspect` writes native line
-protocol straight from the TSM files — types, escaping and all fields intact.
+**Warum nicht `influx -format csv`:** Für ein einzelnes, bekanntes Measurement funktioniert
+es gut, die Spalten von Hand auszuwählen. Über alle Measurements hinweg nicht: CSV kennt keine
+Typen, sodass sich `42i` (Integer) auf dem Rückweg nicht mehr von `42` (Float) oder einem
+String unterscheiden lässt, und ein `friendly_name` mit Komma verschiebt die Spalten.
+`influx_inspect` schreibt natives Line Protocol direkt aus den TSM-Dateien — Typen, Escaping
+und alle Felder bleiben erhalten.
 
-## 3. Import into MariaDB
+## 3. Import in MariaDB
 
-[`influx_import_mysql.sh`](influx_import_mysql.sh) reads the `.lp` files, converts them
-and pipes the statements into the `mysql` client — no `.sql` files in between. Everything
-but the credentials sits in the config block at the top:
+[`influx_import_mysql.sh`](influx_import_mysql.sh) liest die `.lp`-Dateien, wandelt sie um
+und leitet die Statements in den `mysql`-Client — ohne `.sql`-Dateien dazwischen. Alles
+außer den Zugangsdaten steht im Konfigurationsblock oben:
 
 ```bash
 ./influx_import_mysql.sh <db-user> <db-password>
 DRYRUN=1 ./influx_import_mysql.sh <db-user> <db-password>   # print the SQL instead
 ```
 
-It checks the connection and the table before writing anything, reports rows per file,
-and stops at the first failing file instead of carrying on. `.gz` files are unpacked on
-the fly, and the DDL header that `influx_inspect` puts in front of a dump is skipped.
+Es prüft Verbindung und Tabelle, bevor es irgendetwas schreibt, meldet die Zeilen pro Datei
+und bricht bei der ersten fehlerhaften Datei ab, statt weiterzumachen. `.gz`-Dateien werden
+im Durchlauf entpackt, und der DDL-Header, den `influx_inspect` einem Dump voranstellt, wird
+übersprungen.
 
-It needs the `mysql` client: `sudo apt install mariadb-client`. On MariaDB 11 the
-`mariadb` command is used, which the script picks by itself — the old name still works
-but warns on every call, which would bury the progress output.
+Es braucht den `mysql`-Client: `sudo apt install mariadb-client`. Unter MariaDB 11 wird der
+Befehl `mariadb` verwendet, den das Skript selbst auswählt — der alte Name funktioniert noch,
+warnt aber bei jedem Aufruf, was die Fortschrittsausgabe untergehen ließe.
 
-### The config block
+### Der Konfigurationsblock
 
-| Setting | Effect |
-|---------|--------|
-| `LPDIR` | Directory holding the `.lp` / `.lp.gz` files |
-| `HOST`, `PORT`, `DB`, `TABLE` | Where the rows go |
-| `UNTIL` | Cut-off (UTC): nothing from this moment on. Empty = import everything |
-| `MIN_INTERVAL` | Seconds between two rows per entity, `0` = every point |
-| `DOMAINS` | Space-separated, e. g. `"sensor"` — empty = every domain, including `light`, `binary_sensor` and the rest |
-| `NUMERIC_ONLY` | `1` skips points without a numeric value — switch states and text sensors stay behind |
-| `SOURCE` | Value for the `source` column, `import` by default |
-| `PRECISION` | Timestamp precision in the dump, if it is not nanoseconds |
-| `BATCH` | Rows per `INSERT` statement |
+| Einstellung | Wirkung |
+|-------------|---------|
+| `LPDIR` | Verzeichnis mit den `.lp`- / `.lp.gz`-Dateien |
+| `HOST`, `PORT`, `DB`, `TABLE` | Wohin die Zeilen gehen |
+| `UNTIL` | Stichtag (UTC): nichts ab diesem Zeitpunkt. Leer = alles importieren |
+| `MIN_INTERVAL` | Sekunden zwischen zwei Zeilen pro Entity, `0` = jeder Punkt |
+| `DOMAINS` | Leerzeichengetrennt, z. B. `"sensor"` — leer = alle Domains, einschließlich `light`, `binary_sensor` und der übrigen |
+| `NUMERIC_ONLY` | `1` überspringt Punkte ohne numerischen Wert — Schaltzustände und Text-Sensoren bleiben außen vor |
+| `SOURCE` | Wert für die Spalte `source`, standardmäßig `import` |
+| `PRECISION` | Zeitstempel-Genauigkeit im Dump, falls es nicht Nanosekunden sind |
+| `BATCH` | Zeilen pro `INSERT`-Statement |
 
-**On `MIN_INTERVAL`:** the thinning happens while converting, not in InfluxDB. A
-`GROUP BY time(60s)` would snap every value onto the bucket boundary; this way the real
-timestamp of each point is kept, exactly like the automation does it in normal operation.
-It relies on the points of an entity arriving in order, which the dump delivers. Input
-that is out of order only ever keeps more rows, never fewer.
+**Zu `MIN_INTERVAL`:** Das Ausdünnen passiert beim Umwandeln, nicht in InfluxDB. Ein
+`GROUP BY time(60s)` würde jeden Wert auf die Bucket-Grenze setzen; so bleibt der echte
+Zeitstempel jedes Punkts erhalten, genau wie die Automation es im Normalbetrieb macht.
+Das setzt voraus, dass die Punkte einer Entity in Reihenfolge ankommen, was der Dump liefert.
+Eingaben außer der Reihe behalten immer nur mehr Zeilen, nie weniger.
 
-### The cut-off
+### Der Stichtag
 
-`UNTIL` ends the import at a given moment, so it stops exactly where the archive
-automation took over and the two do not overlap:
+`UNTIL` beendet den Import zu einem bestimmten Zeitpunkt, sodass er genau dort aufhört, wo
+die Archiv-Automation übernommen hat, und sich beide nicht überschneiden:
 
 ```bash
 UNTIL="2026-09-11 14:05:58.529"   # nothing from this moment on
 ```
 
-The right value is the first row the automation wrote itself:
+Der richtige Wert ist die erste Zeile, die die Automation selbst geschrieben hat:
 
 ```sql
 SELECT MIN(ts) FROM states WHERE source = 'ha';
 ```
 
-Take it from **that query**, not from the Home Assistant interface — the column is UTC,
-while the interface shows local time, and in summer the two are two hours apart. A
-cut-off read off the screen would cut two hours too late and let the import write over a
-window the automation already covers.
+Nimm ihn aus **dieser Abfrage**, nicht aus der Home-Assistant-Oberfläche — die Spalte ist in
+UTC, die Oberfläche zeigt Ortszeit, und im Sommer liegen die beiden zwei Stunden auseinander.
+Ein vom Bildschirm abgelesener Stichtag würde zwei Stunden zu spät schneiden und den Import
+über ein Zeitfenster schreiben lassen, das die Automation bereits abdeckt.
 
-`UNTIL` may be given as `YYYY-MM-DD`, `YYYY-MM-DD HH:MM:SS` or with milliseconds; a short
-form is filled up to the end of the period it names, so a bare date means that whole day.
-The named moment itself is still imported. Leave it empty to import everything.
+`UNTIL` kann als `YYYY-MM-DD`, `YYYY-MM-DD HH:MM:SS` oder mit Millisekunden angegeben werden;
+eine Kurzform wird bis zum Ende des genannten Zeitraums aufgefüllt, ein reines Datum steht
+also für den ganzen Tag. Der genannte Zeitpunkt selbst wird noch importiert. Leer lassen, um
+alles zu importieren.
 
-A file that runs past the cut-off reports it: `3 rows (…, after cut-off 2)`. The password
-goes into a temporary file with mode 600 rather than the command line, where `ps` would
-show it to everyone on the machine.
+Eine Datei, die über den Stichtag hinausreicht, meldet das: `3 rows (…, after cut-off 2)`. Das
+Passwort landet in einer temporären Datei mit Modus 600 statt auf der Kommandozeile, wo `ps`
+es jedem auf der Maschine zeigen würde.
 
-The statements are `INSERT IGNORE`. Rows that are already in the table — written by the
-automation, or corrected by hand — stay untouched; only genuinely missing history is
-added. A file can therefore be imported twice without doing any harm.
+Die Statements sind `INSERT IGNORE`. Zeilen, die schon in der Tabelle stehen — von der
+Automation geschrieben oder von Hand korrigiert —, bleiben unberührt; ergänzt wird nur
+tatsächlich fehlender Verlauf. Eine Datei lässt sich daher zweimal importieren, ohne
+Schaden anzurichten.
 
-## Before importing into a partitioned table
+## Vor dem Import in eine partitionierte Tabelle
 
-If the target table is already partitioned by month, its **oldest** partition determines
-how far back a row may reach. An import from 2023 into a table whose first partition
-starts in 2026 fails with `Table has no partition for value`.
+Ist die Zieltabelle bereits nach Monaten partitioniert, bestimmt ihre **älteste** Partition,
+wie weit eine Zeile zurückreichen darf. Ein Import aus 2023 in eine Tabelle, deren erste
+Partition 2026 beginnt, scheitert mit `Table has no partition for value`.
 
-Partitions for the past cannot be created through `pmax` — that one only covers the
-future. The first partition has to be split up instead:
+Partitionen für die Vergangenheit lassen sich nicht über `pmax` anlegen — die deckt nur die
+Zukunft ab. Stattdessen muss die erste Partition aufgeteilt werden:
 
 ```sql
 ALTER TABLE states REORGANIZE PARTITION p2026_01 INTO (
@@ -183,14 +188,15 @@ ALTER TABLE states REORGANIZE PARTITION p2026_01 INTO (
 );
 ```
 
-Whole years are enough for the imported past: those partitions never grow again, and the
-point of the monthly cut — dropping old data in one go — is served just as well by a year.
+Ganze Jahre reichen für die importierte Vergangenheit: Diese Partitionen wachsen nie wieder,
+und der Zweck des monatlichen Schnitts — alte Daten in einem Rutsch zu löschen — wird von
+einem Jahr genauso gut erfüllt.
 
-The simplest order is the other way round, though: **import first, partition afterwards.**
-The initial `ALTER TABLE … PARTITION BY` rewrites the table anyway and sorts everything
-that is in there into the right partition on its own.
+Am einfachsten ist allerdings die umgekehrte Reihenfolge: **erst importieren, dann
+partitionieren.** Das erste `ALTER TABLE … PARTITION BY` schreibt die Tabelle ohnehin neu und
+sortiert alles, was darin steht, von selbst in die richtige Partition.
 
-## Afterwards
+## Danach
 
 ```sql
 -- How much arrived, per source
@@ -200,25 +206,26 @@ SELECT source, COUNT(*), MIN(ts), MAX(ts) FROM states GROUP BY source;
 ANALYZE TABLE states;
 ```
 
-If the InfluxDB integration is still running in parallel, both archives fill up for a
-while — that is harmless. Once the MariaDB archive is complete, `influxdb:` can come out
-of the `configuration.yaml` and the add-on can go.
+Läuft die InfluxDB-Integration noch parallel, füllen sich eine Weile beide Archive — das ist
+unbedenklich. Sobald das MariaDB-Archiv vollständig ist, kann `influxdb:` aus der
+`configuration.yaml` raus und das Add-on weg.
 
-## Notes
+## Hinweise
 
-- **Timestamps** are UTC on both sides, so nothing is converted.
-- **Milliseconds:** InfluxDB stores nanoseconds, `DATETIME(3)` stores milliseconds. Two
-  points of the same entity within the same millisecond collapse into one row — the
-  primary key `(entity_id, ts)` allows only one, and `INSERT IGNORE` keeps the first.
-- **Duplicates in the dump:** `influx_inspect` writes the TSM data and the WAL data one
-  after the other, so the same point can appear twice. `INSERT IGNORE` settles that.
-- **Booleans** become `value = 1` / `0` with `state = 'true'` / `'false'`, so a
-  `binary_sensor` stays usable in a graph.
-- **Numbers** keep the notation from the dump: `42i` becomes `42`, `-3.25e2` stays
-  `-3.25e2`. Both are valid `DOUBLE` literals and land in the column as the same number.
-- **Entities that no longer exist** come across as well. Their rows are harmless, and
-  `DELETE FROM states WHERE entity_id LIKE …` gets rid of them afterwards.
+- **Zeitstempel** sind auf beiden Seiten UTC, es wird also nichts umgerechnet.
+- **Millisekunden:** InfluxDB speichert Nanosekunden, `DATETIME(3)` speichert Millisekunden.
+  Zwei Punkte derselben Entity innerhalb derselben Millisekunde fallen zu einer Zeile
+  zusammen — der Primärschlüssel `(entity_id, ts)` erlaubt nur eine, und `INSERT IGNORE`
+  behält die erste.
+- **Duplikate im Dump:** `influx_inspect` schreibt die TSM-Daten und die WAL-Daten
+  nacheinander, sodass derselbe Punkt zweimal auftauchen kann. `INSERT IGNORE` regelt das.
+- **Booleans** werden zu `value = 1` / `0` mit `state = 'true'` / `'false'`, sodass ein
+  `binary_sensor` in einem Graphen nutzbar bleibt.
+- **Zahlen** behalten die Schreibweise aus dem Dump: `42i` wird zu `42`, `-3.25e2` bleibt
+  `-3.25e2`. Beides sind gültige `DOUBLE`-Literale und landen als dieselbe Zahl in der Spalte.
+- **Nicht mehr existierende Entities** werden ebenfalls übernommen. Ihre Zeilen sind
+  unbedenklich, und `DELETE FROM states WHERE entity_id LIKE …` entfernt sie nachträglich.
 
-## License
+## Lizenz
 
 MIT License

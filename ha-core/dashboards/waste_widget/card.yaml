@@ -1,9 +1,9 @@
-# Abfall-Widget für Übersichts-Dashboard
-# Zeigt die nächste Müllabholung an und verlinkt auf den Abfallkalender.
+# Waste widget for the overview dashboard
+# Shows the next waste collection and links to the waste calendar.
 #
-# Voraussetzungen:
-# - Sensor "sensor.nachste_abholung" (Name ggf. anpassen)
-# - Mushroom Cards (via HACS installieren)
+# Requirements:
+# - Sensor "sensor.nachste_abholung" (adjust the name if needed)
+# - Mushroom Cards (install via HACS)
 
 type: custom:mushroom-template-card
 primary: Nächste Abholung

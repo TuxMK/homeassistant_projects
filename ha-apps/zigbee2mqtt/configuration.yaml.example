@@ -1,45 +1,45 @@
-# Zigbee2MQTT Konfiguration - Relevante Aenderungen
+# Zigbee2MQTT configuration - relevant changes
 #
-# Diese Datei zeigt NUR die Aenderungen zur Vermeidung von
-# Binding Table Overflow bei EFR32MG21-basierten Coordinatoren.
+# This file shows ONLY the changes that avoid a
+# binding table overflow on EFR32MG21-based coordinators.
 #
-# Fuege diese Abschnitte in deine bestehende configuration.yaml ein.
+# Add these sections to your existing configuration.yaml.
 
 # ============================================================
-# 1. Unter 'advanced:' hinzufuegen:
+# 1. Add under 'advanced:':
 # ============================================================
 advanced:
-  # Deaktiviert automatisches Reporting-Setup
-  # Verhindert einige (aber nicht alle) Configure-Versuche
+  # Disables the automatic reporting setup
+  # Prevents some (but not all) configure attempts
   report: false
 
 # ============================================================
-# 2. Neuen Abschnitt hinzufuegen (falls nicht vorhanden):
+# 2. Add a new section (if not present):
 # ============================================================
-# Verhindert Configure beim Geraete-Beitritt
-# Funktioniert nicht bei allen Geraeten zuverlaessig
+# Prevents configure when a device joins
+# Does not work reliably for every device
 device_options:
   configure_on_join: false
 
 # ============================================================
-# 3. External Converter laden - MUSS vor 'devices:' stehen!
+# 3. Load the external converter - MUST come before 'devices:'!
 # ============================================================
-# Der Converter ueberschreibt die Geraete-Definition und
-# entfernt die configure-Funktion komplett
+# The converter overrides the device definition and
+# removes the configure function entirely
 external_converters:
   - develco_override.js
 
 # ============================================================
-# Reihenfolge in der configuration.yaml:
+# Order in configuration.yaml:
 # ============================================================
 # mqtt:
 # serial:
 # advanced:
-#   report: false        <-- NEU
-# device_options:        <-- NEU
+#   report: false        <-- NEW
+# device_options:        <-- NEW
 #   configure_on_join: false
 # frontend:
 # homeassistant:
-# external_converters:   <-- NEU
+# external_converters:   <-- NEW
 #   - develco_override.js
 # devices:

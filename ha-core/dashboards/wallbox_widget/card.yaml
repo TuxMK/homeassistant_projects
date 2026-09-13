@@ -1,13 +1,13 @@
-# Wallbox-Widget für Übersichts-Dashboard
-# Zeigt Lade-/Anschlussstatus der evcc-Wallbox(en) an
-# und verlinkt auf das evcc-Dashboard.
+# Wallbox widget for the overview dashboard
+# Shows the charging/connection status of the evcc wallbox(es)
+# and links to the evcc dashboard.
 #
-# Voraussetzungen:
-# - evcc-Integration mit den hems_evcc_wallbox_*-Entities
-# - Mushroom Cards (via HACS installieren)
+# Requirements:
+# - evcc integration with the hems_evcc_wallbox_* entities
+# - Mushroom Cards (install via HACS)
 #
-# Mehrere Wallboxen: einfach weitere Einträge in die wallboxes-Liste ergänzen.
-# Einfach den Code unten kopieren und als neue Karte im Dashboard hinzufügen.
+# Several wallboxes: add more entries to the wallboxes list.
+# Copy the code below and add it to the dashboard as a new card.
 
 type: custom:mushroom-template-card
 primary: Wallbox
@@ -25,11 +25,11 @@ secondary: |
   ] %}
   {% set ns = namespace(lines=[]) %}
   {% for wb in wallboxes %}
-    {# Werte, die evcc/HA für "kein bekanntes Fahrzeug" liefern kann —
-       bei einem Gastfahrzeug meldet evcc z. B. 'null'. #}
+    {# Values evcc/HA may report for "no known vehicle" -
+       for a guest vehicle evcc reports e.g. 'null'. #}
     {% set leer = ['', 'none', 'null', 'nil', 'unknown', 'unavailable'] %}
-    {# Anzeigename aus dem verschachtelten 'vehicle'-Attribut (Dict) der evcc-Auswahl,
-       z. B. "Skoda Elroq von Max" — unabhängig vom technischen state (z. B. "db:11"). #}
+    {# Display name from the nested 'vehicle' attribute (dict) of the evcc select,
+       e.g. "Skoda Elroq von Max" - independent of the technical state (e.g. "db:11"). #}
     {% set info = state_attr(wb.vehicle, 'vehicle') %}
     {% set vname = info.name if (info is mapping and info.name is string) else none %}
     {% set raw = states(wb.vehicle) %}
@@ -38,7 +38,7 @@ secondary: |
     {% elif raw is string and raw | trim | lower not in leer %}
       {% set car = raw | trim %}
     {% elif is_state(wb.connected, 'on') %}
-      {# Angesteckt, aber von evcc keinem Fahrzeug zugeordnet #}
+      {# Plugged in, but evcc has not matched it to a vehicle #}
       {% set car = 'Gastfahrzeug' %}
     {% else %}
       {% set car = 'kein Fahrzeug' %}
@@ -46,8 +46,8 @@ secondary: |
     {% set soc = states(wb.soc) | float(0) | round(0) %}
     {% set lim = states(wb.limit) | float(0) | round(0) %}
     {% set vlim = states(wb.vehiclelimit) | float(0) | round(0) %}
-    {# evcc-Ladeziel, optional ergänzt um das vom Fahrzeug gemeldete Limit.
-       Beim Gastfahrzeug fehlen beide Werte -> Ladeziel wird weggelassen. #}
+    {# evcc charge target, optionally with the limit reported by the vehicle.
+       A guest vehicle has neither value -> the charge target is left out. #}
     {% set target = [(lim ~ '%') if lim > 0 else none,
                      (vlim ~ '%') if vlim > 0 else none] | reject('none') | join(' / ') %}
     {% set socinfo = (' · ' ~ soc ~ '%' ~ ('→' ~ target if target else '')) if soc > 0 else '' %}

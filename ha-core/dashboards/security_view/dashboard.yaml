@@ -1,13 +1,13 @@
-# Sicherheits-Dashboard mit zentralen Entity-Listen
+# Security dashboard with central entity lists
 #
-# Nutzt die Attribute von sensor.sicherheitsstatus für dynamische Entity-Listen.
-# Die Pattern sind zentral in custom_templates/security_entities.jinja definiert.
+# Uses the attributes of sensor.sicherheitsstatus for dynamic entity lists.
+# The patterns are defined centrally in custom_templates/security_entities.jinja.
 #
-# Voraussetzungen:
-# - Template-Sensor "sensor.sicherheitsstatus"
+# Requirements:
+# - Template sensor "sensor.sicherheitsstatus"
 # - custom:auto-entities (via HACS)
 # - custom:mushroom (via HACS)
-# - card-mod (via HACS, optional für Farben)
+# - card-mod (via HACS, optional for colors)
 
 type: sections
 max_columns: 4

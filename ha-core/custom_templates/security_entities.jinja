@@ -1,22 +1,22 @@
 {# ============================================================================
-   Security Entities - Zentrale Entity-Pattern fuer Sicherheitsgeraete
+   Security Entities - central entity patterns for security devices
 
-   Diese Datei definiert alle Entity-Pattern fuer Sicherheitsgeraete.
-   Neue Geraete werden automatisch erkannt, wenn sie dem Pattern entsprechen.
+   This file defines every entity pattern for security devices.
+   New devices are picked up automatically as soon as they match a pattern.
 
    Installation:
-   1. Datei nach /config/custom_templates/security_entities.jinja kopieren
-   2. In Templates/Automationen importieren mit:
+   1. Copy the file to /config/custom_templates/security_entities.jinja
+   2. Import it in templates/automations with:
       {% from 'security_entities.jinja' import alarm_rauch_sensoren %}
 
    ============================================================================ #}
 
 
 {# --------------------------------------------------------------------------
-   ALARM-SENSOREN (Rauch, CO, etc.)
+   ALARM SENSORS (smoke, CO, etc.)
    -------------------------------------------------------------------------- #}
 
-{# Alarm-Rauch-Sensoren - Binary Sensors die Rauch erkennen #}
+{# Smoke alarm sensors - binary sensors that detect smoke #}
 {% macro alarm_rauch_sensoren() %}
 {{ states.binary_sensor
    | selectattr('entity_id', 'search', '(co_alarm_.*_rauch|feueralarm_.*_(smoke|rauch))')
@@ -26,7 +26,7 @@
 {% endmacro %}
 
 
-{# Alarm-CO-Sensoren - Kohlenmonoxid-Messwerte und Carbon Monoxide Binary Sensors #}
+{# CO alarm sensors - carbon monoxide readings and carbon monoxide binary sensors #}
 {% macro alarm_co_sensoren() %}
 {% set sensoren_kohlenmonoxid = states.sensor
    | selectattr('entity_id', 'search', 'co_alarm_.*_kohlenmonoxid')
@@ -41,10 +41,10 @@
 
 
 {# --------------------------------------------------------------------------
-   LECKAGE-SENSOREN (Wasserleck)
+   LEAK SENSORS (water leak)
    -------------------------------------------------------------------------- #}
 
-{# Leckage-Sensoren - Binary Sensors die Wasserlecks erkennen #}
+{# Leak sensors - binary sensors that detect water leaks #}
 {% macro alarm_leckage_sensoren() %}
 {{ states.binary_sensor
    | selectattr('entity_id', 'search', 'leckagealarm_.*_water_leak')
@@ -55,10 +55,10 @@
 
 
 {# --------------------------------------------------------------------------
-   ALARM-BATTERIE-SENSOREN
+   ALARM BATTERY SENSORS
    -------------------------------------------------------------------------- #}
 
-{# Alarm-Batterie-Sensoren - Batteriestand der Sicherheitsgeraete #}
+{# Alarm battery sensors - battery level of the security devices #}
 {% macro alarm_batterie_sensoren() %}
 {{ states.sensor
    | selectattr('entity_id', 'search', '(co_alarm_.*_(batterie|battery)|feueralarm_.*_batter|leckagealarm_.*_battery)')
@@ -69,10 +69,10 @@
 
 
 {# --------------------------------------------------------------------------
-   ALARM-FEHLER-SENSOREN
+   ALARM FAULT SENSORS
    -------------------------------------------------------------------------- #}
 
-{# Alarm-Fehler-Sensoren - Geraetedefekte und Lebensdauer-Ende #}
+{# Alarm fault sensors - device faults and end of life #}
 {% macro alarm_fehler_sensoren() %}
 {{ states.binary_sensor
    | selectattr('entity_id', 'search', '(co_alarm_.*_is_life_end|feueralarm_.*_(fault|is_life_end))')
@@ -86,7 +86,7 @@
    ALARM-PANELS
    -------------------------------------------------------------------------- #}
 
-{# Alarm-Panels - Die Alarm-Zentralen #}
+{# Alarm panels - the alarm control panels #}
 {% macro alarm_panels() %}
 {{ [
   'alarm_control_panel.alarm_zentrale',
@@ -97,10 +97,10 @@
 
 
 {# --------------------------------------------------------------------------
-   KOMBINIERTE ABFRAGEN
+   COMBINED QUERIES
    -------------------------------------------------------------------------- #}
 
-{# Alle Alarm-Sensoren (fuer Gesamtstatus) #}
+{# All alarm sensors (for the overall status) #}
 {% macro alarm_alle_sensoren() %}
 {{ ((alarm_rauch_sensoren() | from_json) +
     (alarm_co_sensoren() | from_json) +

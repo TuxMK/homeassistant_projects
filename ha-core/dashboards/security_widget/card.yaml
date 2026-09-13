@@ -1,12 +1,12 @@
-# Sicherheits-Widget für Übersichts-Dashboard
-# Zeigt den Gesamtstatus aller Sicherheitssensoren an
-# und verlinkt auf die Sicherheits-Ansicht.
+# Security widget for the overview dashboard
+# Shows the overall status of all security sensors
+# and links to the security view.
 #
-# Voraussetzungen:
-# - Template-Sensor "sensor.sicherheitsstatus" (siehe templates/security_status/sensor.yaml)
-# - Mushroom Cards (via HACS installieren)
+# Requirements:
+# - Template sensor "sensor.sicherheitsstatus" (see templates/security_status/sensor.yaml)
+# - Mushroom Cards (install via HACS)
 #
-# Einfach den Code unten kopieren und als neue Karte im Dashboard hinzufügen.
+# Copy the code below and add it to the dashboard as a new card.
 
 type: custom:mushroom-template-card
 primary: >

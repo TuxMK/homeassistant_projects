@@ -1,8 +1,8 @@
-# Statistik-Widget für Übersichts-Dashboard
-# Verlinkt auf die Energie-/Statistik-Ansicht.
+# Statistics widget for the overview dashboard
+# Links to the energy/statistics view.
 #
-# Voraussetzung:
-# - Mushroom Cards (via HACS installieren)
+# Requirement:
+# - Mushroom Cards (install via HACS)
 
 type: custom:mushroom-template-card
 primary: Statistik & Historie

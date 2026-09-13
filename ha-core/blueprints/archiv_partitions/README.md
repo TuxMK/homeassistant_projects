@@ -1,36 +1,36 @@
-# Maintain monthly partitions
+# Monatspartitionen pflegen
 
-Home Assistant blueprint that creates the partitions of the upcoming months in a
-partitioned archive table and optionally drops the oldest ones.
+Home-Assistant-Blueprint, das in einer partitionierten Archivtabelle die Partitionen der
+kommenden Monate anlegt und auf Wunsch die ältesten entfernt.
 
-Counterpart to [Metrics Archive (MariaDB)](../archiv_metrics/), which writes the
-values. Why partitioning is worth it is explained there under
-[Monthly partitioning](../archiv_metrics/README.md#monthly-partitioning).
+Gegenstück zu [Metrics Archive (MariaDB)](../archiv_metrics/), das die Werte schreibt.
+Warum sich die Partitionierung lohnt, steht dort unter
+[Monatspartitionierung](../archiv_metrics/README.md#monatspartitionierung).
 
 **Version: 1.0**
 
 ## Features
 
-- Creates missing months ahead of time, before the change of month needs them
-- Drops old partitions in constant time instead of with a long `DELETE`
-- Idempotent: what already exists is left alone, missed runs are caught up by the next
-- Runs daily and additionally after every restart of Home Assistant
-- Changes nothing as long as the table is not partitioned — it only reports that
+- Legt fehlende Monate vorab an, bevor der Monatswechsel sie braucht
+- Entfernt alte Partitionen in konstanter Zeit statt mit einem langen `DELETE`
+- Idempotent: Was schon existiert, bleibt unangetastet, verpasste Läufe holt der nächste nach
+- Läuft täglich und zusätzlich nach jedem Neustart von Home Assistant
+- Ändert nichts, solange die Tabelle nicht partitioniert ist — meldet das nur
 
-## What a run does
+## Was ein Lauf macht
 
-1. Read the existing partitions from `information_schema.partitions`.
-2. Build the target months: current month plus lead time.
-3. Create the missing months with a single
-   `ALTER TABLE … REORGANIZE PARTITION pmax INTO (…)`.
-4. If a retention is set: drop every partition below the threshold with
-   `ALTER TABLE … DROP PARTITION`.
+1. Die vorhandenen Partitionen aus `information_schema.partitions` lesen.
+2. Die Zielmonate bilden: aktueller Monat plus Vorlauf.
+3. Die fehlenden Monate mit einem einzigen
+   `ALTER TABLE … REORGANIZE PARTITION pmax INTO (…)` anlegen.
+4. Falls eine Aufbewahrungsdauer gesetzt ist: jede Partition unterhalb der Grenze mit
+   `ALTER TABLE … DROP PARTITION` entfernen.
 
-Only months **after** the last existing partition are created. A gap in the past can
-no longer be closed through `pmax` — the data of the following month is already in
-the way there.
+Angelegt werden nur Monate **nach** der letzten vorhandenen Partition. Eine Lücke in der
+Vergangenheit lässt sich über `pmax` nicht mehr schließen — dort stehen die Daten des
+Folgemonats bereits im Weg.
 
-This is the SQL that gets generated:
+So sieht das erzeugte SQL aus:
 
 ```sql
 ALTER TABLE `states` REORGANIZE PARTITION pmax INTO (
@@ -41,13 +41,13 @@ ALTER TABLE `states` REORGANIZE PARTITION pmax INTO (
 ALTER TABLE `states` DROP PARTITION p2025_09, p2025_10;
 ```
 
-## Requirements
+## Voraussetzungen
 
-### 1. Partition the table once
+### 1. Tabelle einmalig partitionieren
 
-The initial `ALTER TABLE … PARTITION BY` rewrites the whole table. On a grown archive
-that takes a while and locks the table — which is why this step deliberately stays
-manual, to be done in a quiet minute:
+Das erste `ALTER TABLE … PARTITION BY` schreibt die gesamte Tabelle neu. Bei einem
+gewachsenen Archiv dauert das eine Weile und sperrt die Tabelle — deshalb bleibt dieser
+Schritt bewusst manuell und gehört in eine ruhige Minute:
 
 ```sql
 ALTER TABLE states PARTITION BY RANGE (TO_DAYS(ts)) (
@@ -56,19 +56,19 @@ ALTER TABLE states PARTITION BY RANGE (TO_DAYS(ts)) (
 );
 ```
 
-The first partition has to cover the oldest month present. Whatever is already in the
-table is sorted into place by MariaDB itself. Everything after that is handled by the
-automation.
+Die erste Partition muss den ältesten vorhandenen Monat abdecken. Was bereits in der
+Tabelle liegt, sortiert MariaDB selbst an die richtige Stelle. Alles Weitere übernimmt
+die Automation.
 
-`pmax` is mandatory: without that catch-all partition every `INSERT` with a timestamp
-beyond the last bound fails — and it is exactly through `pmax` that the automation
-creates new months.
+`pmax` ist Pflicht: Ohne diese Auffang-Partition schlägt jedes `INSERT` mit einem
+Zeitstempel jenseits der letzten Grenze fehl — und genau über `pmax` legt die Automation
+neue Monate an.
 
-### 2. A login with ALTER
+### 2. Ein Login mit ALTER
 
-The archive's write login deliberately only has `SELECT`, `INSERT`, `UPDATE`,
-`DELETE`. Maintaining partitions needs `ALTER`, and the retention additionally needs
-`DROP`. A separate login makes sense — in the MariaDB add-on:
+Das Schreib-Login des Archivs hat bewusst nur `SELECT`, `INSERT`, `UPDATE`, `DELETE`.
+Für die Partitionspflege braucht es `ALTER`, für die Aufbewahrungsdauer zusätzlich
+`DROP`. Ein eigenes Login ist sinnvoll — im MariaDB-Add-on:
 
 ```yaml
 logins:
@@ -83,7 +83,7 @@ rights:
       - DROP
 ```
 
-and in the pyscript app configuration:
+und in der Konfiguration der pyscript-App:
 
 ```yaml
 # configuration.yaml
@@ -103,53 +103,55 @@ pyscript:
 
 ## Installation
 
-### Through the UI
+### Über die UI
 
-1. **Settings > Automations & scenes > Blueprints**
-2. Click **Import blueprint**
-3. Enter the raw URL of the file `blueprint_archiv_partitions.yaml`
+1. **Einstellungen > Automationen & Szenen > Blueprints**
+2. Auf **Blueprint importieren** klicken
+3. Die Raw-URL der Datei `blueprint_archiv_partitions.yaml` eingeben
 
-### Manually
+### Manuell
 
-Copy the file to `/config/blueprints/automation/archiv_partitions/` and reload the
-automations in the developer tools.
+Die Datei nach `/config/blueprints/automation/archiv_partitions/` kopieren und die
+Automationen in den Entwicklerwerkzeugen neu laden.
 
-## Configuration
+## Konfiguration
 
-### Target
+Die Spalte „Option“ nennt die Felder so, wie das Blueprint-Formular sie anzeigt, also auf Englisch; hinter dem Gedankenstrich der Überschriften steht der Abschnittsname aus dem Formular.
 
-| Option | Description | Default |
+### Ziel – Target
+
+| Option | Beschreibung | Standard |
 |--------|-------------|---------|
-| Database | Name of the database in MariaDB | `ha_metrics` |
-| Table | The partitioned archive table, partition column `ts` | `states` |
-| Login | Login from the pyscript app configuration, needs `ALTER` | empty |
+| Database | Name der Datenbank in MariaDB | `ha_metrics` |
+| Table | Die partitionierte Archivtabelle, Partitionsspalte `ts` | `states` |
+| Login | Login aus der Konfiguration der pyscript-App, braucht `ALTER` | leer |
 
-### Behavior
+### Verhalten – Behavior
 
-| Option | Description | Default |
+| Option | Beschreibung | Standard |
 |--------|-------------|---------|
-| Lead time | How many months are kept ready ahead | `2` months |
-| Retention | How many months are kept, `0` = unlimited | `0` |
-| Time of day | When the daily run happens | `04:17:00` |
+| Lead time | Wie viele Monate im Voraus bereitstehen | `2` Monate |
+| Retention | Wie viele Monate behalten werden, `0` = unbegrenzt | `0` |
+| Time of day | Wann der tägliche Lauf stattfindet | `04:17:00` |
 
-**The retention deletes data irreversibly.** The default `0` touches nothing. Only once
-a value is set there does the automation drop old partitions — at `24` a good two years
-are kept.
+**Die Aufbewahrungsdauer löscht Daten unwiderruflich.** Der Standard `0` rührt nichts an.
+Erst wenn dort ein Wert steht, entfernt die Automation alte Partitionen — bei `24` bleiben
+gut zwei Jahre erhalten.
 
-The lead time can be generous: empty partitions cost next to nothing, and `REORGANIZE`
-is only instant as long as `pmax` is empty. If the automation first runs when data is
-already sitting there, MariaDB has to move those rows.
+Der Vorlauf darf großzügig sein: Leere Partitionen kosten so gut wie nichts, und
+`REORGANIZE` ist nur so lange sofort erledigt, wie `pmax` leer ist. Läuft die Automation
+erst, wenn dort schon Daten liegen, muss MariaDB diese Zeilen umschichten.
 
-### Connection (advanced)
+### Verbindung (erweitert) – Connection (advanced)
 
-| Option | Description | Default |
+| Option | Beschreibung | Standard |
 |--------|-------------|---------|
-| Host | Database host | `core-mariadb` |
-| Port | Database port | `3306` |
+| Host | Datenbank-Host | `core-mariadb` |
+| Port | Datenbank-Port | `3306` |
 
-## Example
+## Beispiel
 
-Two months of lead time, keep three years:
+Zwei Monate Vorlauf, drei Jahre aufbewahren:
 
 ```yaml
 alias: Maintain archive partitions
@@ -164,9 +166,9 @@ use_blueprint:
     run_at: "04:17:00"
 ```
 
-## Checking the result
+## Ergebnis prüfen
 
-What actually got created:
+Was tatsächlich angelegt wurde:
 
 ```sql
 SELECT partition_name, table_rows,
@@ -176,25 +178,27 @@ WHERE table_schema = 'ha_metrics' AND table_name = 'states'
 ORDER BY partition_ordinal_position;
 ```
 
-With InnoDB `table_rows` is only an estimate, which is good enough for the size
-distribution.
+Bei InnoDB ist `table_rows` nur ein Schätzwert, für die Größenverteilung reicht das
+aber aus.
 
-## Notes
+## Hinweise
 
-- **Partition names are compared as text.** The automation takes the highest existing
-  name as the upper end and only creates months above it. A name outside the `pYYYY_MM`
-  scheme — `p_before` or `pmin`, say — sorts above every month and would stop it from
-  ever creating another one. A catch-all for old data is not needed anyway: the first
-  partition takes everything below its bound.
-- If the table is not partitioned or `pmax` is missing, the automation writes a warning
-  to the log (logger `archiv_partitions`) and changes nothing. That is the hint that
-  the one-time partitioning above is still missing.
-- `ALTER TABLE` locks the table briefly. Creating an empty partition takes
-  milliseconds, and so does `DROP PARTITION` — regardless of how many rows are in it.
-  The running archive blueprint copes with that, it simply retries on the next sweep.
-- The automation writes no data and only reads `information_schema`, so a failed run
-  cannot corrupt anything. The only risk is in the retention.
+- **Partitionsnamen werden als Text verglichen.** Die Automation nimmt den höchsten
+  vorhandenen Namen als oberes Ende und legt nur Monate darüber an. Ein Name außerhalb
+  des Schemas `pYYYY_MM` — etwa `p_before` oder `pmin` — sortiert über jedem Monat und
+  würde verhindern, dass sie je wieder einen anlegt. Eine Auffang-Partition für alte
+  Daten braucht es ohnehin nicht: Die erste Partition nimmt alles unterhalb ihrer Grenze auf.
+- Ist die Tabelle nicht partitioniert oder fehlt `pmax`, schreibt die Automation eine
+  Warnung ins Log (Logger `archiv_partitions`) und ändert nichts. Das ist der Hinweis,
+  dass die einmalige Partitionierung von oben noch fehlt.
+- `ALTER TABLE` sperrt die Tabelle kurz. Eine leere Partition anzulegen dauert
+  Millisekunden, `DROP PARTITION` ebenso — unabhängig davon, wie viele Zeilen darin
+  liegen. Das laufende Archiv-Blueprint kommt damit zurecht, es versucht es einfach beim
+  nächsten Durchlauf erneut.
+- Die Automation schreibt keine Daten und liest nur `information_schema`, ein
+  fehlgeschlagener Lauf kann also nichts beschädigen. Das einzige Risiko liegt in der
+  Aufbewahrungsdauer.
 
-## License
+## Lizenz
 
 MIT License
