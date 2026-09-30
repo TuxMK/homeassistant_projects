@@ -1,0 +1,10 @@
+# DynDNS endpoint for UniFi: /nic/update -> index.php (dyndns.php uploaded as index.php)
+
+# Pass the Basic auth header (hostname/API token from UniFi) through to PHP-FPM
+CGIPassAuth On
+
+RewriteEngine On
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+# UniFi calls /nic/update (tolerate a doubled or trailing slash)
+RewriteRule ^/*nic/update/?$ index.php [L,QSA]
