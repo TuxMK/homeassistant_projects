@@ -3,7 +3,7 @@ blueprint:
   description: >
     # Maintain monthly partitions
 
-    **Version: 1.0**
+    **Version: 1.1**
 
 
     Creates the partitions of the upcoming months in a partitioned archive table in
@@ -42,6 +42,9 @@ blueprint:
 
       If the table is not partitioned or `pmax` is missing, the automation writes a
       warning to the log and changes nothing.
+
+      The automation waits for the entity `pyscript.ha_mysql` = `ready`, which the
+      pyscript app sets once `pyscript.sql_execute` is available.
     </details>
   domain: automation
   input:
@@ -139,8 +142,16 @@ max_exceeded: silent
 triggers:
   - trigger: time
     at: !input run_at
-  - trigger: homeassistant
-    event: start
+  # Run once the SQL connector is loaded - this replaces a trigger on Home
+  # Assistant start, which fires before pyscript has registered its action
+  - trigger: state
+    entity_id: pyscript.ha_mysql
+    to: ready
+
+conditions:
+  - condition: state
+    entity_id: pyscript.ha_mysql
+    state: ready
 
 variables:
   database: !input database

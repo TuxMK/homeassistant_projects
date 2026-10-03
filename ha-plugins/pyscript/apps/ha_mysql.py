@@ -2,7 +2,8 @@
 SQL connector (pyscript app) for Home Assistant
 ================================================
 
-Provides the action `pyscript.sql_execute`.
+Provides the action `pyscript.sql_execute`. Once it is registered, the entity
+`pyscript.ha_mysql` is set to `ready` - automations gate on it.
 
 Everything domain specific comes from the HA automation: host, port, database,
 SQL statement and parameters. Only username and password live in the app
@@ -164,3 +165,9 @@ fields:
 
     result["ok"] = True
     return result
+
+# Readiness flag: set only after the service above is registered. Pyscript loads
+# its apps after Home Assistant has started, so automations that fire early (on
+# startup, time patterns, state changes) gate on this entity instead of running
+# into an unknown action.
+state.set("pyscript.ha_mysql", "ready", friendly_name="SQL connector (ha_mysql)")

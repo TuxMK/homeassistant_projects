@@ -13,7 +13,7 @@ Blueprint fest verdrahtet, die angezeigten Werte sind nur Vorgaben. Dasselbe Blu
 lässt sich deshalb mehrfach verwenden, etwa mit getrennten Tabellen oder Intervallen je
 Sensorgruppe.
 
-**Version: 1.4**
+**Version: 1.5**
 
 ## Features
 
@@ -134,6 +134,13 @@ pyscript:
 Der Name unter `apps:` muss dem Dateinamen entsprechen. Nach einem Neustart steht die Aktion
 **Run SQL** (`pyscript.sql_execute`) in den Entwicklerwerkzeugen zur Verfügung und lässt
 sich dort mit `SELECT 1` testen.
+
+Sobald die Aktion registriert ist, setzt die App die Entity `pyscript.ha_mysql` auf `ready`.
+Pyscript lädt seine Apps erst, nachdem Home Assistant gestartet ist — bis dahin gibt es
+`pyscript.sql_execute` noch nicht. Die Automation läuft deshalb nur, wenn
+`pyscript.ha_mysql` den Zustand `ready` hat; ohne diese Bedingung meldet Home Assistant nach
+jedem Neustart eine „unbekannte Aktion“. Fehlt die Entity dauerhaft, ist die App nicht
+geladen (Konfiguration unter `apps:`, `allow_all_imports`, PyMySQL im Log prüfen).
 
 ## Installation
 

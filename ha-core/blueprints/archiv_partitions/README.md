@@ -7,14 +7,15 @@ Gegenstück zu [Metrics Archive (MariaDB)](../archiv_metrics/), das die Werte sc
 Warum sich die Partitionierung lohnt, steht dort unter
 [Monatspartitionierung](../archiv_metrics/README.md#monatspartitionierung).
 
-**Version: 1.0**
+**Version: 1.1**
 
 ## Features
 
 - Legt fehlende Monate vorab an, bevor der Monatswechsel sie braucht
 - Entfernt alte Partitionen in konstanter Zeit statt mit einem langen `DELETE`
 - Idempotent: Was schon existiert, bleibt unangetastet, verpasste Läufe holt der nächste nach
-- Läuft täglich und zusätzlich nach jedem Neustart von Home Assistant
+- Läuft täglich und zusätzlich nach jedem Neustart von Home Assistant — sobald die
+  Pyscript-App geladen ist (`pyscript.ha_mysql` = `ready`), nicht schon beim Start selbst
 - Ändert nichts, solange die Tabelle nicht partitioniert ist — meldet das nur
 
 ## Was ein Lauf macht

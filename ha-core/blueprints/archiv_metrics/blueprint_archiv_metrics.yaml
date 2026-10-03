@@ -3,7 +3,7 @@ blueprint:
   description: >
     # Metrics Archive (MariaDB) — archive sensor records
 
-    **Version: 1.4**
+    **Version: 1.5**
 
 
     Writes sensor values into a dedicated MariaDB database through the pyscript
@@ -171,6 +171,13 @@ triggers:
   - trigger: time_pattern
     seconds: !input sweep_seconds
     id: sweep
+
+# Pyscript loads its apps only after Home Assistant has started - until then
+# pyscript.sql_execute does not exist and every run would fail as unknown action
+conditions:
+  - condition: state
+    entity_id: pyscript.ha_mysql
+    state: ready
 
 variables:
   entities: !input entities
